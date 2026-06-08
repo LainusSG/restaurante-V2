@@ -21,14 +21,26 @@
         {% if venta %}
             {% for item in venta.items.all %}
                 <li class="ticket-line">
-                    <span>{{ item.cantidad }}x {{ item.producto_nombre }}<br><small>{{ item.observaciones }}</small></span>
+                    <span>
+                        {{ item.cantidad }}x {{ item.producto_nombre }}<br>
+                        <small>{{ item.observaciones }}</small>
+                        {% if item.es_cortesia %}
+                            <br><small>Cortesia restaurante: -${{ item.descuento_cortesia }}</small>
+                        {% endif %}
+                    </span>
                     <span>${{ item.subtotal }}</span>
                 </li>
             {% endfor %}
         {% else %}
             {% for item in pedido.items.all %}
                 <li class="ticket-line">
-                    <span>{{ item.cantidad }}x {{ item.producto.nombre }}<br><small>{{ item.observaciones }}</small></span>
+                    <span>
+                        {{ item.cantidad }}x {{ item.producto.nombre }}<br>
+                        <small>{{ item.observaciones }}</small>
+                        {% if item.es_cortesia %}
+                            <br><small>Cortesia restaurante: -${{ item.descuento_cortesia }}</small>
+                        {% endif %}
+                    </span>
                     <span>${{ item.subtotal }}</span>
                 </li>
             {% endfor %}

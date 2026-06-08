@@ -33,6 +33,10 @@
                                     <form method="post" action="{% url 'agregar_al_pedido' mesa.id producto.id %}" class="app-form">
                                         {% csrf_token %}
                                         <label>
+                                            <input type="checkbox" name="es_cortesia">
+                                            Agregar como cortesia
+                                        </label>
+                                        <label>
                                             <input type="checkbox" class="chk_obs">
                                             Agregar observaciones
                                         </label>
@@ -58,6 +62,9 @@
                             <div>
                                 <strong>{{ item.producto.nombre }} (x{{ item.cantidad }})</strong><br>
                                 <small class="muted">{{ item.observaciones }}</small>
+                                {% if item.es_cortesia %}
+                                    <small class="courtesy-discount">Cortesia restaurante: -${{ item.descuento_cortesia }}</small>
+                                {% endif %}
                             </div>
                             <div>
                                 <span class="price">${{ item.subtotal }}</span>

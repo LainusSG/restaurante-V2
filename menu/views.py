@@ -63,12 +63,14 @@ def agregar_al_pedido(request, mesa_id, producto_id):
     observaciones = request.POST.get("observaciones", "").strip()
     if not observaciones:
         observaciones = "con todo"
+    es_cortesia = request.POST.get("es_cortesia") == "on"
 
     # 🚨 Siempre crear un nuevo item
     PedidoItem.objects.create(
         pedido=pedido,
         producto=producto,
         observaciones=observaciones,
+        es_cortesia=es_cortesia,
         cantidad=1,
         confirmado=False
     )
@@ -130,7 +132,9 @@ def _crear_venta_desde_pedido(pedido):
                 producto_nombre=item.producto.nombre,
                 cantidad=item.cantidad,
                 observaciones=item.observaciones,
+                es_cortesia=item.es_cortesia,
                 precio_unitario=item.producto.precio,
+                descuento_cortesia=item.descuento_cortesia(),
                 subtotal=item.subtotal(),
             )
             for item in pedido.items.select_related("producto").all()

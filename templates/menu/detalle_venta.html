@@ -27,6 +27,7 @@
                         <th>Cantidad</th>
                         <th>Observaciones</th>
                         <th>Precio</th>
+                        <th>Descuento</th>
                         <th>Subtotal</th>
                     </tr>
                 </thead>
@@ -37,6 +38,7 @@
                             <td>{{ item.cantidad }}</td>
                             <td>{{ item.observaciones }}</td>
                             <td>${{ item.precio_unitario }}</td>
+                            <td>{% if item.es_cortesia %}-${{ item.descuento_cortesia }}{% else %}$0.00{% endif %}</td>
                             <td>${{ item.subtotal }}</td>
                         </tr>
                     {% endfor %}

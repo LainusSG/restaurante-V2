@@ -38,9 +38,7 @@ class Pedido(models.Model):
     atendido = models.BooleanField(default=False)
 
     def calcular_total(self):
-        total = self.items.aggregate(
-            suma=Sum(models.F("cantidad") * models.F("producto__precio"))
-        )["suma"] or 0
+        total = sum(item.subtotal() for item in self.items.select_related("producto").all())
         self.total = total
         self.save()
         return total
@@ -53,12 +51,19 @@ class PedidoItem(models.Model):
     producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
     cantidad = models.PositiveIntegerField(default=1)
     observaciones = models.CharField(max_length=255, default="con todo")
+    es_cortesia = models.BooleanField(default=False)
     confirmado = models.BooleanField(default=False)  # ya lo tenemos
     atendido = models.BooleanField(default=False)   # nuevo
     surtido = models.BooleanField(default=False)    # nuevo
 
-    def subtotal(self):
+    def importe_bruto(self):
         return self.cantidad * self.producto.precio
+
+    def descuento_cortesia(self):
+        return self.importe_bruto() if self.es_cortesia else 0
+
+    def subtotal(self):
+        return 0 if self.es_cortesia else self.importe_bruto()
 
     def __str__(self):
         return f"{self.producto.nombre} x{self.cantidad} ({self.observaciones})"
@@ -97,7 +102,9 @@ class VentaItem(models.Model):
     producto_nombre = models.CharField(max_length=100)
     cantidad = models.PositiveIntegerField(default=1)
     observaciones = models.CharField(max_length=255, default="con todo")
+    es_cortesia = models.BooleanField(default=False)
     precio_unitario = models.DecimalField(max_digits=8, decimal_places=2)
+    descuento_cortesia = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     subtotal = models.DecimalField(max_digits=10, decimal_places=2)
 
     class Meta:

@@ -745,6 +745,13 @@ td {
     font-weight: 800;
 }
 
+.courtesy-discount {
+    display: block;
+    margin-top: 3px;
+    color: var(--green);
+    font-weight: 800;
+}
+
 .product-card small,
 .product-card p {
     margin: 0;
