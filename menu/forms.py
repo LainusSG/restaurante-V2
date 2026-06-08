@@ -262,12 +262,11 @@ class ProductoAlmacenForm(forms.ModelForm):
 class IngresoMercanciaForm(forms.ModelForm):
     class Meta:
         model = IngresoMercancia
-        fields = ["proveedor", "producto_almacen", "cantidad", "costo_unitario", "referencia", "notas"]
+        fields = ["proveedor", "producto_almacen", "cantidad", "referencia", "notas"]
         widgets = {
             "proveedor": forms.Select(attrs={"class": "form-input", "id": "id_proveedor_ingreso"}),
             "producto_almacen": forms.Select(attrs={"class": "form-input", "id": "id_producto_almacen_ingreso"}),
             "cantidad": forms.NumberInput(attrs={"class": "form-input", "step": "0.01", "min": "0.01"}),
-            "costo_unitario": forms.NumberInput(attrs={"class": "form-input", "step": "0.01", "min": "0"}),
             "referencia": forms.TextInput(attrs={"class": "form-input", "placeholder": "Factura, nota o folio"}),
             "notas": forms.Textarea(attrs={"class": "form-input", "rows": 3}),
         }

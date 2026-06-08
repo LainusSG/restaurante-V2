@@ -75,17 +75,12 @@ class IngresoMercancia(models.Model):
     proveedor = models.ForeignKey(Proveedor, on_delete=models.PROTECT, related_name="ingresos")
     producto_almacen = models.ForeignKey(ProductoAlmacen, on_delete=models.PROTECT, related_name="ingresos")
     cantidad = models.DecimalField(max_digits=12, decimal_places=2)
-    costo_unitario = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     referencia = models.CharField(max_length=120, blank=True)
     notas = models.TextField(blank=True)
     creado_en = models.DateTimeField(default=now)
 
     class Meta:
         ordering = ["-creado_en"]
-
-    @property
-    def total(self):
-        return self.cantidad * self.costo_unitario
 
     def __str__(self):
         return f"{self.producto_almacen.nombre} +{self.cantidad}"

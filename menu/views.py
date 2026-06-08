@@ -508,17 +508,11 @@ def inventario(request):
     if busqueda:
         productos = productos.filter(nombre__icontains=busqueda)
 
-    productos = list(productos)
-    productos_bajo_minimo = [producto for producto in productos if producto.bajo_minimo]
-    total_faltante = sum((producto.faltante_para_maximo for producto in productos), Decimal("0"))
-
     context = {
         "productos": productos,
         "proveedores": Proveedor.objects.filter(activo=True),
         "proveedor_id": proveedor_id,
         "busqueda": busqueda,
-        "productos_bajo_minimo": productos_bajo_minimo,
-        "total_faltante": total_faltante,
     }
     return render(request, "menu/inventario.html", context)
 

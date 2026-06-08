@@ -1022,10 +1022,6 @@ textarea.form-input {
     font-weight: 800;
 }
 
-.inventory-search {
-    margin-bottom: 8px;
-}
-
 /* Sobreescribir estilos de input/select/textarea */
 .form-input,
 select.form-input {
