@@ -1,5 +1,6 @@
 import calendar
 import json
+from decimal import Decimal
 from datetime import date, timedelta
 
 from django.shortcuts import render, redirect, get_object_or_404
@@ -8,14 +9,41 @@ from django.template.loader import render_to_string
 from django.utils.timezone import now
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import user_passes_test
 from django.views.decorators.http import require_http_methods
 from django.core.paginator import Paginator
 from django.db import transaction
 from django.db.models import Sum
 from django.db.models.functions import TruncDay, TruncMonth, TruncYear
 
-from .models import Categoria, Producto, Pedido, PedidoItem, Mesa, VentaDiaria, Venta, VentaItem
-from .forms import CategoriaForm, ProductoForm, MesaForm
+from .models import (
+    Categoria,
+    IngresoMercancia,
+    Producto,
+    ProductoAlmacen,
+    Pedido,
+    PedidoItem,
+    Mesa,
+    Proveedor,
+    VentaDiaria,
+    Venta,
+    VentaItem,
+)
+from .forms import (
+    CategoriaForm,
+    IngresoMercanciaForm,
+    ProductoAlmacenForm,
+    ProductoForm,
+    MesaForm,
+    ProveedorForm,
+)
+
+
+def _es_admin(user):
+    return user.is_authenticated and user.is_staff
+
+
+admin_required = user_passes_test(_es_admin, login_url="login")
 
 
 # =====================
@@ -143,6 +171,52 @@ def _crear_venta_desde_pedido(pedido):
     return venta
 
 
+def _descontar_inventario_desde_pedido(pedido):
+    faltantes = []
+    descuentos = {}
+    items = pedido.items.select_related("producto", "producto__producto_almacen")
+
+    for item in items:
+        producto_menu = item.producto
+        if not producto_menu.producto_almacen_id:
+            continue
+
+        producto_almacen = ProductoAlmacen.objects.select_for_update().get(
+            id=producto_menu.producto_almacen_id
+        )
+        cantidad_descontar = producto_menu.cantidad_descontar or Decimal("1")
+        cantidad_necesaria = cantidad_descontar * item.cantidad
+
+        if producto_almacen.id in descuentos:
+            descuentos[producto_almacen.id]["cantidad"] += cantidad_necesaria
+            continue
+
+        descuentos[producto_almacen.id] = {
+            "producto": producto_almacen,
+            "cantidad": cantidad_necesaria,
+        }
+
+    for descuento in descuentos.values():
+        producto_almacen = descuento["producto"]
+        cantidad_necesaria = descuento["cantidad"]
+        if producto_almacen.existencia < cantidad_necesaria:
+            faltantes.append(
+                f"{producto_almacen.nombre}: disponible {producto_almacen.existencia} "
+                f"{producto_almacen.unidad}, requerido {cantidad_necesaria} {producto_almacen.unidad}"
+            )
+
+    if faltantes:
+        return faltantes
+
+    for descuento in descuentos.values():
+        producto_almacen = descuento["producto"]
+        cantidad_necesaria = descuento["cantidad"]
+        producto_almacen.existencia -= cantidad_necesaria
+        producto_almacen.save(update_fields=["existencia", "actualizado_en"])
+
+    return []
+
+
 def generar_ticket(request, mesa_id, pedido_id):
     mesa = get_object_or_404(Mesa, id=mesa_id)
     pedido = get_object_or_404(Pedido, id=pedido_id, mesa=mesa, confirmado=True, entregado=False)
@@ -153,6 +227,11 @@ def generar_ticket(request, mesa_id, pedido_id):
 
     with transaction.atomic():
         pedido.calcular_total()
+        faltantes = _descontar_inventario_desde_pedido(pedido)
+        if faltantes:
+            messages.error(request, "Inventario insuficiente: " + "; ".join(faltantes))
+            return redirect("menu", mesa_id=mesa.id)
+
         venta = _crear_venta_desde_pedido(pedido)
         pedido.entregado = True
         pedido.save()
@@ -388,7 +467,7 @@ def dashboard_ventas(request):
 # =====================
 # CRUD Categorías y Productos
 # =====================
-@login_required
+@admin_required
 def crear_categoria(request):
     if request.method == "POST":
         form = CategoriaForm(request.POST)
@@ -400,7 +479,7 @@ def crear_categoria(request):
     return render(request, "menu/crear_categoria.html", {"form": form})
 
 
-@login_required
+@admin_required
 def crear_producto(request):
     if request.method == "POST":
         form = ProductoForm(request.POST, request.FILES)
@@ -412,13 +491,99 @@ def crear_producto(request):
     return render(request, "menu/crear_producto.html", {"form": form})
 
 
-@login_required
+@admin_required
 def crear_menu(request):
     categorias = Categoria.objects.all().prefetch_related("productos")
     return render(request, "menu/crear_menu.html", {"categorias": categorias})
 
 
-@login_required
+@admin_required
+def inventario(request):
+    proveedor_id = request.GET.get("proveedor", "")
+    busqueda = request.GET.get("q", "").strip()
+
+    productos = ProductoAlmacen.objects.select_related("proveedor").filter(activo=True)
+    if proveedor_id:
+        productos = productos.filter(proveedor_id=proveedor_id)
+    if busqueda:
+        productos = productos.filter(nombre__icontains=busqueda)
+
+    productos = list(productos)
+    productos_bajo_minimo = [producto for producto in productos if producto.bajo_minimo]
+    total_faltante = sum((producto.faltante_para_maximo for producto in productos), Decimal("0"))
+
+    context = {
+        "productos": productos,
+        "proveedores": Proveedor.objects.filter(activo=True),
+        "proveedor_id": proveedor_id,
+        "busqueda": busqueda,
+        "productos_bajo_minimo": productos_bajo_minimo,
+        "total_faltante": total_faltante,
+    }
+    return render(request, "menu/inventario.html", context)
+
+
+@admin_required
+def crear_proveedor(request):
+    if request.method == "POST":
+        form = ProveedorForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Proveedor creado correctamente")
+            return redirect("inventario")
+    else:
+        form = ProveedorForm()
+    return render(request, "menu/crear_proveedor.html", {"form": form})
+
+
+@admin_required
+def crear_producto_almacen(request):
+    if request.method == "POST":
+        form = ProductoAlmacenForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Producto de almacen creado correctamente")
+            return redirect("inventario")
+    else:
+        form = ProductoAlmacenForm()
+    return render(request, "menu/crear_producto_almacen.html", {"form": form})
+
+
+@admin_required
+def ingresar_mercancia(request):
+    productos = ProductoAlmacen.objects.filter(activo=True).select_related("proveedor")
+    productos_por_proveedor = [
+        {
+            "id": producto.id,
+            "proveedor_id": producto.proveedor_id,
+            "nombre": producto.nombre,
+            "unidad": producto.unidad,
+        }
+        for producto in productos
+    ]
+
+    if request.method == "POST":
+        form = IngresoMercanciaForm(request.POST)
+        if form.is_valid():
+            with transaction.atomic():
+                ingreso = form.save()
+                producto = ProductoAlmacen.objects.select_for_update().get(id=ingreso.producto_almacen_id)
+                producto.existencia += ingreso.cantidad
+                producto.save(update_fields=["existencia", "actualizado_en"])
+            messages.success(request, "Mercancia ingresada correctamente")
+            return redirect("inventario")
+    else:
+        proveedor_inicial = request.GET.get("proveedor")
+        initial = {"proveedor": proveedor_inicial} if proveedor_inicial else None
+        form = IngresoMercanciaForm(initial=initial)
+
+    return render(request, "menu/ingresar_mercancia.html", {
+        "form": form,
+        "productos_por_proveedor": productos_por_proveedor,
+    })
+
+
+@admin_required
 def editar_categoria(request, categoria_id):
     categoria = get_object_or_404(Categoria, id=categoria_id)
     if request.method == "POST":
@@ -431,7 +596,7 @@ def editar_categoria(request, categoria_id):
     return render(request, "menu/editar_categoria.html", {"form": form, "categoria": categoria})
 
 
-@login_required
+@admin_required
 @require_http_methods(["POST"])
 def eliminar_categoria(request, categoria_id):
     categoria = get_object_or_404(Categoria, id=categoria_id)
@@ -439,6 +604,7 @@ def eliminar_categoria(request, categoria_id):
     return redirect("crear_menu")
 
 
+@admin_required
 def editar_producto(request, producto_id):
     producto = get_object_or_404(Producto, id=producto_id)
     if request.method == "POST":
@@ -451,6 +617,7 @@ def editar_producto(request, producto_id):
     return render(request, "menu/editar_producto.html", {"form": form, "producto": producto})
 
 
+@admin_required
 @require_http_methods(["POST"])
 def eliminar_producto(request, producto_id):
     producto = get_object_or_404(Producto, id=producto_id)

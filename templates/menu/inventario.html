@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}Inventario{% endblock %}
+
+{% block page %}
+{% include "components/page_hero.html" with compact=True eyebrow="Administracion" title="Inventario" subtitle="Controla proveedores, existencias, minimos, maximos y mercancia por comprar." %}
+
+<main class="page-shell">
+    <div class="toolbar">
+        <div class="section-heading">
+            <h2>Almacen</h2>
+        </div>
+        <div class="button-row">
+            <a href="{% url 'crear_proveedor' %}" class="btn">Crear proveedor</a>
+            <a href="{% url 'crear_producto_almacen' %}" class="btn">Crear producto de almacen</a>
+            <a href="{% url 'ingresar_mercancia' %}" class="btn btn-success">Ingresar mercancia</a>
+            <a href="{% url 'crear_menu' %}" class="btn btn-secondary">Volver al panel</a>
+        </div>
+    </div>
+
+    <section class="dashboard-grid">
+        <article class="content-card metric-card">
+            <span>Productos por reponer</span>
+            <strong>{{ productos_bajo_minimo|length }}</strong>
+            <p>Productos en minimo o por debajo.</p>
+        </article>
+        <article class="content-card metric-card">
+            <span>Faltante a maximos</span>
+            <strong>{{ total_faltante }}</strong>
+            <p>Unidades totales necesarias para llegar al maximo.</p>
+        </article>
+    </section>
+
+    <section class="content-card">
+        <form method="get" class="inventory-filter">
+            <label>
+                Proveedor
+                <select name="proveedor" class="form-input">
+                    <option value="">Todos los proveedores</option>
+                    {% for proveedor in proveedores %}
+                        <option value="{{ proveedor.id }}" {% if proveedor_id == proveedor.id|stringformat:"s" %}selected{% endif %}>{{ proveedor.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </label>
+            <label>
+                Buscar producto
+                <input type="search" name="q" value="{{ busqueda }}" class="form-input" placeholder="Nombre del producto">
+            </label>
+            <div class="form-actions">
+                <button type="submit">Filtrar</button>
+                <a href="{% url 'inventario' %}" class="btn btn-secondary">Limpiar</a>
+            </div>
+        </form>
+    </section>
+
+    <section class="table-card">
+        <div class="section-heading">
+            <h2>Productos de almacen</h2>
+            <p>El faltante indica cuanto comprar para volver al maximo.</p>
+        </div>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Producto</th>
+                        <th>Proveedor</th>
+                        <th>Existencia</th>
+                        <th>Minimo</th>
+                        <th>Maximo</th>
+                        <th>Comprar</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for producto in productos %}
+                        <tr>
+                            <td>{{ producto.nombre }}</td>
+                            <td>{{ producto.proveedor.nombre }}</td>
+                            <td>{{ producto.existencia }} {{ producto.unidad }}</td>
+                            <td>{{ producto.minimo }} {{ producto.unidad }}</td>
+                            <td>{{ producto.maximo }} {{ producto.unidad }}</td>
+                            <td>{{ producto.faltante_para_maximo }} {{ producto.unidad }}</td>
+                            <td>
+                                {% if producto.bajo_minimo %}
+                                    <span class="status status-busy">Por agotarse</span>
+                                {% else %}
+                                    <span class="status status-free">Suficiente</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="7" class="empty-state">No hay productos de almacen con estos filtros.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+</main>
+{% endblock %}

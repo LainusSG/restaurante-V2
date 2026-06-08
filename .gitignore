@@ -8,4 +8,6 @@ server.log
 server.err
 staticfiles/
 lib
-migrations/
+migrations/__pycache__/
+!menu/migrations/
+!menu/migrations/*.py

@@ -15,9 +15,80 @@ class Producto(models.Model):
     descripcion = models.TextField(blank=True)
     precio = models.DecimalField(max_digits=8, decimal_places=2)
     imagen = models.ImageField(upload_to="productos/", blank=True, null=True)
+    producto_almacen = models.ForeignKey(
+        "ProductoAlmacen",
+        on_delete=models.SET_NULL,
+        related_name="productos_menu",
+        blank=True,
+        null=True,
+    )
+    cantidad_descontar = models.DecimalField(max_digits=10, decimal_places=2, default=1)
 
     def __str__(self):
         return self.nombre
+
+
+class Proveedor(models.Model):
+    nombre = models.CharField(max_length=150, unique=True)
+    telefono = models.CharField(max_length=30, blank=True)
+    email = models.EmailField(blank=True)
+    direccion = models.TextField(blank=True)
+    notas = models.TextField(blank=True)
+    activo = models.BooleanField(default=True)
+    creado_en = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["nombre"]
+
+    def __str__(self):
+        return self.nombre
+
+
+class ProductoAlmacen(models.Model):
+    proveedor = models.ForeignKey(Proveedor, on_delete=models.PROTECT, related_name="productos")
+    nombre = models.CharField(max_length=150)
+    unidad = models.CharField(max_length=30, default="pieza")
+    existencia = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    minimo = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    maximo = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    activo = models.BooleanField(default=True)
+    actualizado_en = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["nombre"]
+        unique_together = ["proveedor", "nombre"]
+
+    @property
+    def faltante_para_maximo(self):
+        faltante = self.maximo - self.existencia
+        return faltante if faltante > 0 else 0
+
+    @property
+    def bajo_minimo(self):
+        return self.existencia <= self.minimo
+
+    def __str__(self):
+        return f"{self.nombre} ({self.proveedor.nombre})"
+
+
+class IngresoMercancia(models.Model):
+    proveedor = models.ForeignKey(Proveedor, on_delete=models.PROTECT, related_name="ingresos")
+    producto_almacen = models.ForeignKey(ProductoAlmacen, on_delete=models.PROTECT, related_name="ingresos")
+    cantidad = models.DecimalField(max_digits=12, decimal_places=2)
+    costo_unitario = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    referencia = models.CharField(max_length=120, blank=True)
+    notas = models.TextField(blank=True)
+    creado_en = models.DateTimeField(default=now)
+
+    class Meta:
+        ordering = ["-creado_en"]
+
+    @property
+    def total(self):
+        return self.cantidad * self.costo_unitario
+
+    def __str__(self):
+        return f"{self.producto_almacen.nombre} +{self.cantidad}"
 
 
 class Mesa(models.Model):

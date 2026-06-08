@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Ingresar mercancia{% endblock %}
+{% block body_class %}center-page{% endblock %}
+
+{% block page %}
+<main class="form-card modern-form">
+    <div class="form-card__header">
+        <h1>Ingresar mercancia</h1>
+        <p>Registra las compras recibidas y suma existencia al almacen</p>
+    </div>
+
+    <form method="post" class="app-form">
+        {% csrf_token %}
+        {% for field in form %}
+            {% include "components/form_field.html" with field=field %}
+        {% endfor %}
+
+        {% if form.non_field_errors %}
+            <div class="form-alert form-alert--error">
+                {% for error in form.non_field_errors %}
+                    <p>{{ error }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <div class="form-actions">
+            <button type="submit">Ingresar mercancia</button>
+            <a href="{% url 'inventario' %}" class="btn btn-secondary">Cancelar</a>
+        </div>
+    </form>
+</main>
+{% endblock %}
+
+{% block scripts %}
+{{ productos_por_proveedor|json_script:"productos-proveedor-data" }}
+<script>
+const productosPorProveedor = JSON.parse(document.getElementById("productos-proveedor-data").textContent);
+const proveedorSelect = document.getElementById("id_proveedor_ingreso");
+const productoSelect = document.getElementById("id_producto_almacen_ingreso");
+const valorInicial = productoSelect.value;
+
+function filtrarProductosPorProveedor() {
+    const proveedorId = proveedorSelect.value;
+    productoSelect.innerHTML = '<option value="">---------</option>';
+
+    productosPorProveedor
+        .filter(producto => !proveedorId || String(producto.proveedor_id) === proveedorId)
+        .forEach(producto => {
+            const option = document.createElement("option");
+            option.value = producto.id;
+            option.textContent = `${producto.nombre} (${producto.unidad})`;
+            if (String(producto.id) === valorInicial) {
+                option.selected = true;
+            }
+            productoSelect.appendChild(option);
+        });
+}
+
+proveedorSelect.addEventListener("change", filtrarProductosPorProveedor);
+filtrarProductosPorProveedor();
+</script>
+{% endblock %}

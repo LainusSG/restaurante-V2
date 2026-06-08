@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}Crear producto de almacen{% endblock %}
+{% block body_class %}center-page{% endblock %}
+
+{% block page %}
+<main class="form-card modern-form">
+    <div class="form-card__header">
+        <h1>Producto de almacen</h1>
+        <p>Define proveedor, existencia, minimo y maximo de compra</p>
+    </div>
+
+    <form method="post" class="app-form">
+        {% csrf_token %}
+        {% for field in form %}
+            {% include "components/form_field.html" with field=field %}
+        {% endfor %}
+
+        {% if form.non_field_errors %}
+            <div class="form-alert form-alert--error">
+                {% for error in form.non_field_errors %}
+                    <p>{{ error }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <div class="form-actions">
+            <button type="submit">Crear producto</button>
+            <a href="{% url 'inventario' %}" class="btn btn-secondary">Cancelar</a>
+        </div>
+    </form>
+</main>
+{% endblock %}

@@ -986,6 +986,46 @@ textarea.form-input {
     margin-top: 0;
 }
 
+.message-stack {
+    position: fixed;
+    z-index: 20;
+    top: 16px;
+    right: 16px;
+    display: grid;
+    gap: 10px;
+    width: min(420px, calc(100% - 32px));
+}
+
+.message-stack .alert {
+    margin: 0;
+    background: #fff;
+    box-shadow: var(--shadow-soft);
+}
+
+.alert-success {
+    border-color: var(--green);
+    background: var(--green-soft);
+    color: var(--green);
+}
+
+.inventory-filter {
+    display: grid;
+    grid-template-columns: minmax(220px, 1fr) minmax(220px, 1fr) auto;
+    gap: 14px;
+    align-items: end;
+}
+
+.inventory-filter label {
+    display: grid;
+    gap: 8px;
+    color: var(--muted);
+    font-weight: 800;
+}
+
+.inventory-search {
+    margin-bottom: 8px;
+}
+
 /* Sobreescribir estilos de input/select/textarea */
 .form-input,
 select.form-input {
@@ -1367,6 +1407,10 @@ select.form-input {
 }
 
 @media (max-width: 860px) {
+    .inventory-filter {
+        grid-template-columns: 1fr;
+    }
+
     .dashboard-grid {
         grid-template-columns: 1fr;
     }

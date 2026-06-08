@@ -32,3 +32,57 @@
     </form>
 </main>
 {% endblock %}
+
+{% block scripts %}
+<script>
+const enlaceInventario = document.getElementById("id_enlazar_inventario");
+const productoAlmacen = document.getElementById("id_producto_almacen");
+const cantidadDescontar = document.getElementById("id_cantidad_descontar");
+const productoField = productoAlmacen.closest(".form-field");
+const cantidadField = cantidadDescontar.closest(".form-field");
+const opcionesOriginales = Array.from(productoAlmacen.options).map(option => ({
+    value: option.value,
+    text: option.text,
+}));
+
+const buscador = document.createElement("input");
+buscador.type = "search";
+buscador.className = "form-input inventory-search";
+buscador.placeholder = "Buscar producto de almacen";
+productoAlmacen.parentElement.insertBefore(buscador, productoAlmacen);
+
+function renderOpciones(filtro = "") {
+    const valorActual = productoAlmacen.value;
+    productoAlmacen.innerHTML = "";
+    opcionesOriginales
+        .filter(option => !filtro || option.text.toLowerCase().includes(filtro.toLowerCase()) || option.value === "")
+        .forEach(option => {
+            const nueva = document.createElement("option");
+            nueva.value = option.value;
+            nueva.textContent = option.text;
+            nueva.selected = option.value === valorActual;
+            productoAlmacen.appendChild(nueva);
+        });
+}
+
+function actualizarCamposInventario() {
+    const visible = enlaceInventario.checked;
+    productoField.hidden = !visible;
+    cantidadField.hidden = !visible;
+    productoAlmacen.disabled = !visible;
+    cantidadDescontar.disabled = !visible;
+    buscador.hidden = !visible;
+
+    if (!visible) {
+        productoAlmacen.value = "";
+        cantidadDescontar.value = "";
+        buscador.value = "";
+        renderOpciones();
+    }
+}
+
+buscador.addEventListener("input", () => renderOpciones(buscador.value));
+enlaceInventario.addEventListener("change", actualizarCamposInventario);
+actualizarCamposInventario();
+</script>
+{% endblock %}
