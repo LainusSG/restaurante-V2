@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}Pedidos en cocina{% endblock %}
+
+{% block page %}
+{% include "components/page_hero.html" with compact=True eyebrow="Cocina" title="Pedidos en cocina" subtitle="Da seguimiento a los pedidos activos y marca cada preparacion cuando avance." %}
+
+<main class="page-shell">
+    <div id="pedidos-lista" class="kitchen-grid">
+        {% include "menu/pedidos_list.html" %}
+    </div>
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function actualizarPedidos() {
+        fetch("{% url 'pedidos_cocina_json' %}")
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById("pedidos-lista").innerHTML = data.html;
+            })
+            .catch(error => console.error("Error al actualizar pedidos:", error));
+    }
+
+    actualizarPedidos();
+    setInterval(actualizarPedidos, 3000);
+</script>
+{% endblock %}

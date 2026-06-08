@@ -1,0 +1,211 @@
+<!-- Modal de confirmación reutilizable -->
+<div id="confirmModal" class="confirm-modal" style="display: none;">
+    <div class="confirm-modal__overlay"></div>
+    <div class="confirm-modal__content">
+        <div class="confirm-modal__header">
+            <h3 id="confirmModalTitle">Confirmar</h3>
+        </div>
+        <div class="confirm-modal__body">
+            <p id="confirmModalMessage">¿Estás seguro?</p>
+        </div>
+        <div class="confirm-modal__footer">
+            <button id="confirmModalCancel" class="btn btn-secondary">Cancelar</button>
+            <button id="confirmModalConfirm" class="btn btn-danger">Confirmar</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Sistema de modal de confirmación reutilizable
+    class ConfirmModal {
+        constructor() {
+            this.modal = document.getElementById('confirmModal');
+            this.titleEl = document.getElementById('confirmModalTitle');
+            this.messageEl = document.getElementById('confirmModalMessage');
+            this.confirmBtn = document.getElementById('confirmModalConfirm');
+            this.cancelBtn = document.getElementById('confirmModalCancel');
+            this.overlay = this.modal.querySelector('.confirm-modal__overlay');
+            
+            this.confirmCallback = null;
+            
+            this.setupEventListeners();
+        }
+        
+        setupEventListeners() {
+            this.confirmBtn.addEventListener('click', () => this.handleConfirm());
+            this.cancelBtn.addEventListener('click', () => this.handleCancel());
+            this.overlay.addEventListener('click', () => this.handleCancel());
+            
+            // Cerrar con ESC
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && this.modal.style.display !== 'none') {
+                    this.handleCancel();
+                }
+            });
+        }
+        
+        show(options = {}) {
+            this.titleEl.textContent = options.title || 'Confirmar';
+            this.messageEl.textContent = options.message || '¿Estás seguro?';
+            this.confirmBtn.textContent = options.confirmText || 'Confirmar';
+            this.cancelBtn.textContent = options.cancelText || 'Cancelar';
+            
+            // Ajustar color del botón de confirmación
+            this.confirmBtn.className = 'btn ' + (options.confirmClass || 'btn-danger');
+            
+            this.confirmCallback = options.onConfirm || null;
+            this.modal.style.display = 'flex';
+        }
+        
+        hide() {
+            this.modal.style.display = 'none';
+            this.confirmCallback = null;
+        }
+        
+        handleConfirm() {
+            if (this.confirmCallback) {
+                this.confirmCallback();
+            }
+            this.hide();
+        }
+        
+        handleCancel() {
+            this.hide();
+        }
+    }
+    
+    // Obtener CSRF token de la cookie
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    
+    // Instancia global
+    const confirmModal = new ConfirmModal();
+    
+    // Buscar todos los elementos con data-confirm-*
+    document.addEventListener('DOMContentLoaded', function() {
+        // Manejar enlaces con data-confirm
+        document.querySelectorAll('[data-confirm-message]').forEach(element => {
+            element.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                const title = this.getAttribute('data-confirm-title') || 'Confirmar';
+                const message = this.getAttribute('data-confirm-message');
+                const confirmText = this.getAttribute('data-confirm-text') || 'Confirmar';
+                const href = this.getAttribute('href');
+                const method = this.getAttribute('data-confirm-method') || 'GET';
+                
+                confirmModal.show({
+                    title: title,
+                    message: message,
+                    confirmText: confirmText,
+                    confirmClass: 'btn-danger',
+                    onConfirm: function() {
+                        if (href) {
+                            if (method === 'POST') {
+                                // Crear formulario POST dinámico
+                                const form = document.createElement('form');
+                                form.method = 'POST';
+                                form.action = href;
+                                
+                                // Agregar CSRF token de la cookie
+                                const csrfToken = getCookie('csrftoken');
+                                if (csrfToken) {
+                                    const input = document.createElement('input');
+                                    input.type = 'hidden';
+                                    input.name = 'csrfmiddlewaretoken';
+                                    input.value = csrfToken;
+                                    form.appendChild(input);
+                                }
+                                
+                                document.body.appendChild(form);
+                                form.submit();
+                            } else {
+                                window.location.href = href;
+                            }
+                        }
+                    }
+                });
+            });
+        });
+    });
+</script>
+
+<style>
+    .confirm-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+    }
+    
+    .confirm-modal__overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+    }
+    
+    .confirm-modal__content {
+        position: relative;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        max-width: 420px;
+        width: 90%;
+        overflow: hidden;
+    }
+    
+    .confirm-modal__header {
+        padding: 1.5rem;
+        border-bottom: 1px solid #e5e7eb;
+    }
+    
+    .confirm-modal__header h3 {
+        margin: 0;
+        font-size: 1.125rem;
+        font-weight: 600;
+    }
+    
+    .confirm-modal__body {
+        padding: 1.5rem;
+    }
+    
+    .confirm-modal__body p {
+        margin: 0;
+        color: #374151;
+        line-height: 1.5;
+    }
+    
+    .confirm-modal__footer {
+        padding: 1rem 1.5rem;
+        background: #f9fafb;
+        border-top: 1px solid #e5e7eb;
+        display: flex;
+        gap: 0.75rem;
+        justify-content: flex-end;
+    }
+    
+    .confirm-modal__footer .btn {
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+    }
+</style>

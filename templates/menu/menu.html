@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block title %}Menu - Mesa {{ mesa.nombre }}{% endblock %}
+
+{% block page %}
+{% with mesa_titulo="Mesa "|add:mesa.nombre %}
+    {% include "components/page_hero.html" with compact=True eyebrow="Pedido en mesa" title=mesa_titulo subtitle="Selecciona platillos y confirma el pedido cuando este listo." %}
+{% endwith %}
+
+<main class="page-shell">
+    <div class="menu-layout">
+        <section>
+            <div class="section-heading">
+                <h2>Categorias</h2>
+            </div>
+
+            {% for categoria in categorias %}
+                <section class="section-block">
+                    <div class="section-heading">
+                        <h3>{{ categoria.nombre }}</h3>
+                    </div>
+
+                    <div class="product-grid">
+                        {% for producto in categoria.productos.all %}
+                            <article class="product-card">
+                                {% if producto.imagen %}
+                                    <img src="{{ producto.imagen.url }}" alt="{{ producto.nombre }}" class="product-card__image">
+                                {% endif %}
+                                <div class="product-card__body">
+                                    <h4>{{ producto.nombre }}</h4>
+                                    <p class="price">${{ producto.precio }}</p>
+
+                                    <form method="post" action="{% url 'agregar_al_pedido' mesa.id producto.id %}" class="app-form">
+                                        {% csrf_token %}
+                                        <label>
+                                            <input type="checkbox" class="chk_obs">
+                                            Agregar observaciones
+                                        </label>
+                                        <textarea name="observaciones" rows="2" class="txt_obs" disabled></textarea>
+                                        <button type="submit">Agregar</button>
+                                    </form>
+                                </div>
+                            </article>
+                        {% empty %}
+                            <p class="empty-state">No hay productos en esta categoria.</p>
+                        {% endfor %}
+                    </div>
+                </section>
+            {% endfor %}
+        </section>
+
+        <aside class="order-panel">
+            <h2>Pedido actual</h2>
+            {% if pedido %}
+                <ul class="order-list">
+                    {% for item in pedido.items.all %}
+                        <li>
+                            <div>
+                                <strong>{{ item.producto.nombre }} (x{{ item.cantidad }})</strong><br>
+                                <small class="muted">{{ item.observaciones }}</small>
+                            </div>
+                            <div>
+                                <span class="price">${{ item.subtotal }}</span>
+                                {% if not item.confirmado %}
+                                    <a href="{% url 'eliminar_item_pedido' mesa.id item.id %}" class="btn btn-ghost">Quitar</a>
+                                {% endif %}
+                            </div>
+                        </li>
+                    {% endfor %}
+                </ul>
+
+                <p class="total">Total: ${{ pedido.total }}</p>
+
+                {% if not pedido.confirmado %}
+                    <form method="post" action="{% url 'confirmar_pedido' mesa.id pedido.id %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn-success">Confirmar pedido</button>
+                    </form>
+                {% elif todos_entregados %}
+                    <a href="{% url 'generar_ticket' mesa.id pedido.id %}" class="btn btn-success">Generar ticket</a>
+                {% endif %}
+            {% else %}
+                <p class="empty-state">No tienes productos en tu pedido.</p>
+            {% endif %}
+
+            <a href="{% url 'seleccionar_mesa' %}" class="back-link">Volver</a>
+        </aside>
+    </div>
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.querySelectorAll(".chk_obs").forEach((chk, index) => {
+        const txt = document.querySelectorAll(".txt_obs")[index];
+        chk.addEventListener("change", () => {
+            txt.disabled = !chk.checked;
+            if (!chk.checked) txt.value = "";
+        });
+    });
+</script>
+{% endblock %}

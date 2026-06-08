@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block title %}Ventas del dia{% endblock %}
+
+{% block page %}
+{% include "components/page_hero.html" with compact=True eyebrow="Ventas" title="Ventas del dia" subtitle="Resumen rapido de ventas registradas hoy." %}
+
+<main class="page-shell">
+    <section class="content-card">
+        {% if ventas %}
+            <p class="muted">Fecha: {{ ventas.fecha }}</p>
+            <h2>Total vendido: ${{ ventas.total }}</h2>
+        {% else %}
+            <p class="empty-state">No hay ventas registradas hoy.</p>
+        {% endif %}
+    </section>
+</main>
+{% endblock %}

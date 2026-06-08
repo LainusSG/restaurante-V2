@@ -1,0 +1,13 @@
+<article class="table-tile{% if mesa.ocupada %} table-tile--busy{% endif %}">
+    <a href="{{ href }}" class="table-circle{% if mesa.ocupada %} is-busy{% endif %}">
+        {{ mesa.nombre }}
+    </a>
+    <div class="table-tile__meta">
+        <strong>{{ mesa.nombre }}</strong>
+        {% if mesa.ocupada %}
+            <span class="status status-busy">Ocupada</span>
+        {% else %}
+            <span class="status status-free">Disponible</span>
+        {% endif %}
+    </div>
+</article>

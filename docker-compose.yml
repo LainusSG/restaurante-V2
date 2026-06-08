@@ -1,0 +1,38 @@
+services:
+  db:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_NAME:-restaurante}
+      MYSQL_USER: ${DB_USER:-restaurante}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-restaurante123}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root123}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    ports:
+      - "3307:3307"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  web:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    volumes:
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+    ports:
+      - "3001:8000"
+    env_file:
+      - ./.env
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  mysql_data:
+  static_volume:
+  media_volume:

@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}Carta del restaurante{% endblock %}
+{% block body_class %}app-page menu-client-page{% endblock %}
+
+{% block page %}
+{% include "components/page_hero.html" with eyebrow="Carta" title="Menu del restaurante" subtitle="Explora nuestros platillos disponibles por categoria." %}
+
+<main class="page-shell">
+    <div class="menu-catalog-layout">
+        <aside class="category-rail">
+            <strong>Categorias</strong>
+            {% for categoria in categorias %}
+                <a href="#categoria-{{ categoria.id }}">{{ categoria.nombre }}</a>
+            {% endfor %}
+        </aside>
+
+        <div class="menu-catalog">
+            {% for categoria in categorias %}
+                <section class="category-card" id="categoria-{{ categoria.id }}">
+                    <div class="section-heading">
+                        <h2>{{ categoria.nombre }}</h2>
+                        <p>{{ categoria.productos.all|length }} platillos</p>
+                    </div>
+
+                    <div class="product-grid">
+                        {% for producto in categoria.productos.all %}
+                            {% include "components/product_card.html" with producto=producto %}
+                        {% empty %}
+                            <p class="empty-state">No hay productos en esta categoria.</p>
+                        {% endfor %}
+                    </div>
+                </section>
+            {% endfor %}
+        </div>
+    </div>
+</main>
+{% endblock %}

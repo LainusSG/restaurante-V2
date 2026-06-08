@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}Iniciar sesion{% endblock %}
+{% block body_class %}auth-page{% endblock %}
+
+{% block page %}
+<main class="form-card">
+    <h1>Iniciar sesion</h1>
+    <form method="post" class="app-form">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Ingresar</button>
+    </form>
+</main>
+{% endblock %}

@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block title %}Seleccionar mesa{% endblock %}
+{% block body_class %}app-page tables-page{% endblock %}
+
+{% block page %}
+{% include "components/page_hero.html" with compact=True eyebrow="Servicio" title="Selecciona una mesa" subtitle="Elige una mesa disponible para iniciar o continuar un pedido." %}
+
+<main class="page-shell">
+    <div class="table-grid table-grid--service">
+        {% for mesa in mesas %}
+            {% url 'menu' mesa.id as mesa_href %}
+            {% include "components/table_tile.html" with mesa=mesa href=mesa_href %}
+        {% empty %}
+            <p class="empty-state">No hay mesas registradas.</p>
+        {% endfor %}
+    </div>
+</main>
+{% endblock %}

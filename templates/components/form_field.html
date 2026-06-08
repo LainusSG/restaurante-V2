@@ -1,0 +1,38 @@
+{% comment %}
+Componente reutilizable para campos de formulario
+Uso:
+{% include "components/form_field.html" with field=form.nombre %}
+{% endcomment %}
+
+<div class="form-field">
+    <div class="form-field__header">
+        <label for="{{ field.id_for_label }}" class="form-field__label">
+            {{ field.label }}
+            {% if field.field.required %}<span class="form-field__required">*</span>{% endif %}
+        </label>
+        {% if field.help_text %}
+            <span class="form-field__help" title="{{ field.help_text|striptags }}">
+                {{ field.help_text|safe }}
+            </span>
+        {% endif %}
+    </div>
+    
+    <div class="form-field__input-wrapper">
+        {{ field }}
+    </div>
+    
+    {% if field.errors %}
+        <div class="form-field__errors">
+            {% for error in field.errors %}
+                <span class="form-field__error-item">
+                    <svg class="form-field__error-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    </svg>
+                    {{ error }}
+                </span>
+            {% endfor %}
+        </div>
+    {% endif %}
+</div>

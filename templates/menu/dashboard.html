@@ -1,0 +1,335 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard de ventas{% endblock %}
+{% block body_class %}app-page dashboard-page{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block page %}
+{% include "components/page_hero.html" with compact=True eyebrow="Analitica" title="Historial de ventas" subtitle="Consulta el comportamiento de ventas por dia, semana, mes o año." %}
+
+<main class="page-shell">
+    <section class="dashboard-grid">
+        <button class="content-card metric-card metric-card--button" id="abrirVistaAnalisis" type="button">
+            <span>Vista</span>
+            <strong>{{ filtro|title }}</strong>
+            <p>Agrupacion actual del historial.</p>
+        </button>
+        <button class="content-card metric-card metric-card--button" id="abrirConsultaVentas" type="button">
+            <span>Ventas totales</span>
+            <strong>{{ total_general_label }}</strong>
+            <p>{{ consulta_total.label }}</p>
+        </button>
+    </section>
+
+    <div class="dashboard-layout">
+        <section class="table-card dashboard-panel dashboard-panel--table">
+            <div class="section-heading">
+                <h2>Detalle de ventas</h2>
+                <p>Maximo 15 registros por pagina</p>
+            </div>
+            <div class="table-container">
+                <table>
+                    <colgroup>
+                        <col class="period-col">
+                        <col class="total-col">
+                    </colgroup>
+                    <thead>
+                        <tr>
+                            <th>Periodo</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                     {% for d in datos %}
+                        <tr>
+                            <td>{{ d.periodo_label }}</td>
+                            <td>${{ d.total }}</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="pagination">
+                {% if page_obj.has_previous %}
+                    <a href="?page=1&filtro={{ filtro }}">Primero</a>
+                    <a href="?page={{ page_obj.previous_page_number }}&filtro={{ filtro }}">Anterior</a>
+                {% else %}
+                    <span class="disabled">Primero</span>
+                    <span class="disabled">Anterior</span>
+                {% endif %}
+
+                <span class="active">Pagina {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+
+                {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}&filtro={{ filtro }}">Siguiente</a>
+                    <a href="?page={{ page_obj.paginator.num_pages }}&filtro={{ filtro }}">Ultimo</a>
+                {% else %}
+                    <span class="disabled">Siguiente</span>
+                    <span class="disabled">Ultimo</span>
+                {% endif %}
+            </div>
+        </section>
+
+        <section class="content-card dashboard-panel dashboard-panel--chart">
+            <div class="section-heading">
+                <h2>Grafica de ventas</h2>
+            </div>
+            <div class="chart-container">
+                <div class="chart-type-selector">
+                    <button class="chart-btn active" data-tipo="bar" type="button">Barras</button>
+                    <button class="chart-btn" data-tipo="area" type="button">Areas</button>
+                    <button class="chart-btn" data-tipo="pie" type="button">Circular</button>
+                </div>
+                <canvas id="ventasChart"></canvas>
+            </div>
+        </section>
+    </div>
+</main>
+
+<dialog class="app-modal" id="consultaVentasModal">
+    <form method="get" class="modal-card">
+        <div class="section-heading">
+            <h2>Consultar ventas</h2>
+            <button class="btn btn-ghost modal-close" value="cancel" formmethod="dialog" type="submit">Cerrar</button>
+        </div>
+
+        <label for="totalTipo">Tipo de consulta</label>
+        <select name="total_tipo" id="totalTipo">
+            <option value="dia" {% if consulta_total.tipo == "dia" %}selected{% endif %}>Dia</option>
+            <option value="mes" {% if consulta_total.tipo == "mes" %}selected{% endif %}>Mes</option>
+            <option value="ano" {% if consulta_total.tipo == "año" %}selected{% endif %}>Año</option>
+        </select>
+
+        <label for="totalValor">Periodo</label>
+        <input id="totalValor" name="total_valor" value="{{ consulta_total.valor }}" required>
+
+        <div class="form-actions">
+            <button type="submit">Consultar</button>
+            <a href="{% url 'dashboard' %}" class="btn btn-secondary">Ver hoy</a>
+        </div>
+    </form>
+</dialog>
+
+<dialog class="app-modal" id="vistaAnalisisModal">
+    <form method="get" class="modal-card">
+        <div class="section-heading">
+            <h2>Vista de analisis</h2>
+            <button class="btn btn-ghost modal-close" value="cancel" formmethod="dialog" type="submit">Cerrar</button>
+        </div>
+
+        <label for="filtroAnalisis">Agrupar ventas por</label>
+        <select name="filtro" id="filtroAnalisis">
+            <option value="dia" {% if filtro == "dia" %}selected{% endif %}>Dia</option>
+            <option value="semana" {% if filtro == "semana" %}selected{% endif %}>Semana</option>
+            <option value="mes" {% if filtro == "mes" %}selected{% endif %}>Mes</option>
+            <option value="año" {% if filtro == "año" %}selected{% endif %}>Año</option>
+        </select>
+
+        <div class="form-actions">
+            <button type="submit">Ver analisis</button>
+        </div>
+    </form>
+</dialog>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let ventasChart = null;
+const ctx = document.getElementById('ventasChart');
+
+const labels = {{ labels|safe }};
+const valores = {{ valores|safe }};
+
+function obtenerConfiguracionGrafica(tipo) {
+    const colorPrincipal = "rgba(217, 75, 43, 0.68)";
+    const colorBorde = "#d94b2b";
+    const colorTexto = "#2d2a26";
+    const colorGrid = "#eadfd4";
+
+    const configs = {
+        bar: {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Ventas',
+                    data: valores,
+                    backgroundColor: colorPrincipal,
+                    borderColor: colorBorde,
+                    borderWidth: 2,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { labels: { color: colorTexto } }
+                },
+                scales: {
+                    x: { ticks: { color: colorTexto }, grid: { color: colorGrid } },
+                    y: {
+                        beginAtZero: true,
+                        ticks: { color: colorTexto },
+                        grid: { color: colorGrid }
+                    }
+                }
+            }
+        },
+        line: {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Ventas',
+                    data: valores,
+                    borderColor: colorBorde,
+                    backgroundColor: "transparent",
+                    borderWidth: 3,
+                    fill: false,
+                    tension: 0.4,
+                    pointBackgroundColor: colorBorde,
+                    pointBorderColor: "#fff",
+                    pointRadius: 5,
+                    pointHoverRadius: 7,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { labels: { color: colorTexto } }
+                },
+                scales: {
+                    x: { ticks: { color: colorTexto }, grid: { color: colorGrid } },
+                    y: {
+                        beginAtZero: true,
+                        ticks: { color: colorTexto },
+                        grid: { color: colorGrid }
+                    }
+                }
+            }
+        },
+        pie: {
+            type: 'pie',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: valores,
+                    backgroundColor: [
+                        "#d94b2b", "#316f9f", "#2f8f5b", "#e6a13a", "#7b5ba6",
+                        "#b65c38", "#4c6f64", "#b93228", "#8b6f47", "#2a8c85",
+                        "#6c7a89", "#ad7a99", "#d4745f", "#597d35"
+                    ],
+                    borderColor: "#fffaf5",
+                    borderWidth: 2,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { labels: { color: colorTexto } }
+                }
+            }
+        },
+        area: {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Ventas',
+                    data: valores,
+                    borderColor: "#2f8f5b",
+                    backgroundColor: "rgba(47, 143, 91, 0.18)",
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: "#2f8f5b",
+                    pointBorderColor: "#fff",
+                    pointRadius: 5,
+                    pointHoverRadius: 7,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { labels: { color: colorTexto } }
+                },
+                scales: {
+                    x: { ticks: { color: colorTexto }, grid: { color: colorGrid } },
+                    y: {
+                        beginAtZero: true,
+                        ticks: { color: colorTexto },
+                        grid: { color: colorGrid }
+                    }
+                }
+            }
+        }
+    };
+
+    return configs[tipo] || configs.bar;
+}
+
+function cambiarTipoGrafica(tipo) {
+    if (ventasChart) {
+        ventasChart.destroy();
+    }
+
+    const config = obtenerConfiguracionGrafica(tipo);
+    ventasChart = new Chart(ctx, config);
+
+    document.querySelectorAll('.chart-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    document.querySelector(`[data-tipo="${tipo}"]`).classList.add('active');
+}
+
+document.querySelectorAll('.chart-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        cambiarTipoGrafica(this.dataset.tipo);
+    });
+});
+
+window.addEventListener('load', function() {
+    const config = obtenerConfiguracionGrafica('bar');
+    ventasChart = new Chart(ctx, config);
+});
+
+const consultaModal = document.getElementById('consultaVentasModal');
+const abrirConsultaVentas = document.getElementById('abrirConsultaVentas');
+const vistaAnalisisModal = document.getElementById('vistaAnalisisModal');
+const abrirVistaAnalisis = document.getElementById('abrirVistaAnalisis');
+const totalTipo = document.getElementById('totalTipo');
+const totalValor = document.getElementById('totalValor');
+
+function configurarCampoConsulta() {
+    const tipo = totalTipo.value;
+    totalValor.type = tipo === 'mes' ? 'month' : tipo === 'ano' ? 'number' : 'date';
+    totalValor.placeholder = tipo === 'ano' ? 'Ej. 2026' : '';
+    totalValor.min = tipo === 'ano' ? '2000' : '';
+    totalValor.max = tipo === 'ano' ? '2100' : '';
+    totalValor.step = tipo === 'ano' ? '1' : '';
+}
+
+abrirConsultaVentas.addEventListener('click', () => {
+    configurarCampoConsulta();
+    consultaModal.showModal();
+});
+
+abrirVistaAnalisis.addEventListener('click', () => {
+    vistaAnalisisModal.showModal();
+});
+
+totalTipo.addEventListener('change', () => {
+    totalValor.value = '';
+    configurarCampoConsulta();
+});
+
+configurarCampoConsulta();
+</script>
+{% endblock %}

@@ -1,0 +1,11 @@
+venv/
+__pycache__/
+*.py[cod]
+*.sqlite3
+db.sqlite3
+.vscode/
+server.log
+server.err
+staticfiles/
+lib
+migrations/

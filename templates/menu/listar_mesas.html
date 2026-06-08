@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}Mesas{% endblock %}
+{% block body_class %}app-page tables-page{% endblock %}
+
+{% block page %}
+{% include "components/page_hero.html" with compact=True eyebrow="Administracion" title="Mesas registradas" subtitle="Consulta disponibilidad y administra las mesas del restaurante." %}
+
+<main class="page-shell">
+    <div class="toolbar">
+        <div class="section-heading">
+            <h2>Mesas</h2>
+        </div>
+        <a href="{% url 'crear_mesa' %}" class="btn">Crear nueva mesa</a>
+    </div>
+
+    <div class="table-grid table-grid--service">
+        {% for mesa in mesas %}
+            <article class="table-tile{% if mesa.ocupada %} table-tile--busy{% endif %}">
+                <div class="table-circle{% if mesa.ocupada %} is-busy{% endif %}">{{ mesa.nombre }}</div>
+                <div class="table-tile__meta">
+                    <strong>{{ mesa.nombre }}</strong>
+                    {% if mesa.ocupada %}
+                        <span class="status status-busy">Ocupada</span>
+                    {% else %}
+                        <span class="status status-free">Libre</span>
+                    {% endif %}
+                </div>
+                <a href="{% url 'borrar_mesa' mesa.id %}" class="btn btn-danger" 
+                   data-confirm-title="Eliminar mesa"
+                   data-confirm-message="¿Seguro que quieres eliminar la mesa {{ mesa.nombre }}?"
+                   data-confirm-text="Eliminar"
+                   data-confirm-method="POST">
+                    Eliminar
+                </a>
+            </article>
+        {% empty %}
+            <p class="empty-state">No hay mesas registradas.</p>
+        {% endfor %}
+    </div>
+</main>
+{% endblock %}
