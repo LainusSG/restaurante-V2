@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}Venta #{{ venta.id }}{% endblock %}
+{% block body_class %}app-page dashboard-page{% endblock %}
+
+{% block page %}
+{% include "components/page_hero.html" with compact=True eyebrow="Venta" title="Detalle de venta" subtitle="Desglose completo de la venta registrada." %}
+
+<main class="page-shell">
+    <section class="content-card">
+        <div class="section-heading">
+            <div>
+                <h2>Ticket #{{ venta.ticket_numero|default:venta.id }}</h2>
+                <p>{{ venta.creado_en|date:"d/m/Y H:i" }} - Mesa {{ venta.mesa_nombre }}</p>
+            </div>
+            <div class="toolbar">
+                <a href="{% url 'dashboard' %}?filtro=dia" class="btn btn-secondary">Volver</a>
+                <a href="{% url 'reimprimir_ticket' venta.id %}" class="btn">Reimprimir ticket</a>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Producto</th>
+                        <th>Cantidad</th>
+                        <th>Observaciones</th>
+                        <th>Precio</th>
+                        <th>Subtotal</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in venta.items.all %}
+                        <tr>
+                            <td>{{ item.producto_nombre }}</td>
+                            <td>{{ item.cantidad }}</td>
+                            <td>{{ item.observaciones }}</td>
+                            <td>${{ item.precio_unitario }}</td>
+                            <td>${{ item.subtotal }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <p class="total venta-total">Total: ${{ venta.total }}</p>
+    </section>
+</main>
+{% endblock %}

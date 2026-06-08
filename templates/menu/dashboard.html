@@ -35,11 +35,13 @@
                     <colgroup>
                         <col class="period-col">
                         <col class="total-col">
+                        {% if filtro == "dia" %}<col class="action-col">{% endif %}
                     </colgroup>
                     <thead>
                         <tr>
-                            <th>Periodo</th>
+                            <th>{% if filtro == "dia" %}Venta{% else %}Periodo{% endif %}</th>
                             <th>Total</th>
+                            {% if filtro == "dia" %}<th>Accion</th>{% endif %}
                         </tr>
                     </thead>
                     <tbody>
@@ -47,6 +49,13 @@
                         <tr>
                             <td>{{ d.periodo_label }}</td>
                             <td>${{ d.total }}</td>
+                            {% if filtro == "dia" %}
+                                <td><a href="{% url 'detalle_venta' d.id %}" class="btn btn-secondary">Ver venta</a></td>
+                            {% endif %}
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="{% if filtro == 'dia' %}3{% else %}2{% endif %}" class="empty-state">No hay ventas registradas.</td>
                         </tr>
                     {% endfor %}
                     </tbody>
@@ -55,8 +64,8 @@
 
             <div class="pagination">
                 {% if page_obj.has_previous %}
-                    <a href="?page=1&filtro={{ filtro }}">Primero</a>
-                    <a href="?page={{ page_obj.previous_page_number }}&filtro={{ filtro }}">Anterior</a>
+                    <a href="?{% if pagination_query %}{{ pagination_query }}&{% endif %}page=1">Primero</a>
+                    <a href="?{% if pagination_query %}{{ pagination_query }}&{% endif %}page={{ page_obj.previous_page_number }}">Anterior</a>
                 {% else %}
                     <span class="disabled">Primero</span>
                     <span class="disabled">Anterior</span>
@@ -65,8 +74,8 @@
                 <span class="active">Pagina {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
 
                 {% if page_obj.has_next %}
-                    <a href="?page={{ page_obj.next_page_number }}&filtro={{ filtro }}">Siguiente</a>
-                    <a href="?page={{ page_obj.paginator.num_pages }}&filtro={{ filtro }}">Ultimo</a>
+                    <a href="?{% if pagination_query %}{{ pagination_query }}&{% endif %}page={{ page_obj.next_page_number }}">Siguiente</a>
+                    <a href="?{% if pagination_query %}{{ pagination_query }}&{% endif %}page={{ page_obj.paginator.num_pages }}">Ultimo</a>
                 {% else %}
                     <span class="disabled">Siguiente</span>
                     <span class="disabled">Ultimo</span>

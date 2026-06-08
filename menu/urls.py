@@ -21,6 +21,8 @@ urlpatterns = [
 
     # Dashboard
     path("dashboard/", views.dashboard_ventas, name="dashboard"),
+    path("ventas/<int:venta_id>/", views.detalle_venta, name="detalle_venta"),
+    path("ventas/<int:venta_id>/ticket/", views.reimprimir_ticket, name="reimprimir_ticket"),
 
     # CRUD Menú
     path("administrador", views.crear_menu, name="crear_menu"),

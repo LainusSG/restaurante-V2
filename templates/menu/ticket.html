@@ -1,32 +1,47 @@
 {% extends "base.html" %}
 
-{% block title %}Ticket Pedido #{{ pedido.id }}{% endblock %}
+{% block title %}Ticket #{% if venta %}{{ venta.ticket_numero|default:venta.id }}{% else %}{{ pedido.id }}{% endif %}{% endblock %}
 {% block body_class %}receipt-page{% endblock %}
 
 {% block page %}
 <main class="ticket">
     <h1>Restaurante XYZ</h1>
-    <p><strong>Ticket:</strong> #{{ pedido.id }}</p>
-    <p><strong>Fecha:</strong> {{ pedido.creado_en|date:"d/m/Y H:i" }}</p>
-    <p><strong>Mesa:</strong> {{ pedido.mesa.nombre }}</p>
+    {% if venta %}
+        <p><strong>Ticket:</strong> #{{ venta.ticket_numero|default:venta.id }}</p>
+        <p><strong>Fecha:</strong> {{ venta.creado_en|date:"d/m/Y H:i" }}</p>
+        <p><strong>Mesa:</strong> {{ venta.mesa_nombre }}</p>
+    {% else %}
+        <p><strong>Ticket:</strong> #{{ pedido.id }}</p>
+        <p><strong>Fecha:</strong> {{ pedido.creado_en|date:"d/m/Y H:i" }}</p>
+        <p><strong>Mesa:</strong> {{ pedido.mesa.nombre }}</p>
+    {% endif %}
 
     <hr>
     <ul class="clean-list">
-        {% for item in pedido.items.all %}
-            <li class="ticket-line">
-                <span>{{ item.cantidad }}x {{ item.producto.nombre }}<br><small>{{ item.observaciones }}</small></span>
-                <span>${{ item.subtotal }}</span>
-            </li>
-        {% endfor %}
+        {% if venta %}
+            {% for item in venta.items.all %}
+                <li class="ticket-line">
+                    <span>{{ item.cantidad }}x {{ item.producto_nombre }}<br><small>{{ item.observaciones }}</small></span>
+                    <span>${{ item.subtotal }}</span>
+                </li>
+            {% endfor %}
+        {% else %}
+            {% for item in pedido.items.all %}
+                <li class="ticket-line">
+                    <span>{{ item.cantidad }}x {{ item.producto.nombre }}<br><small>{{ item.observaciones }}</small></span>
+                    <span>${{ item.subtotal }}</span>
+                </li>
+            {% endfor %}
+        {% endif %}
     </ul>
     <hr>
-    <p class="total">TOTAL: ${{ pedido.total }}</p>
+    <p class="total">TOTAL: ${% if venta %}{{ venta.total }}{% else %}{{ pedido.total }}{% endif %}</p>
     <hr>
     <div class="ticket-footer">
         Gracias por tu compra<br>Restaurante XYZ
     </div>
 
-    <button onclick="imprimirYVolver()" type="button" class="btn">Imprimir ticket</button>
+    <button onclick="imprimirYVolver()" type="button" class="btn">{% if reimpresion %}Reimprimir ticket{% else %}Imprimir ticket{% endif %}</button>
 </main>
 {% endblock %}
 
@@ -35,7 +50,11 @@
 function imprimirYVolver() {
     window.print();
     setTimeout(() => {
+        {% if reimpresion %}
+        window.location.href = "{% url 'detalle_venta' venta.id %}";
+        {% else %}
         window.location.href = "{% url 'seleccionar_mesa' %}";
+        {% endif %}
     }, 500);
 }
 </script>

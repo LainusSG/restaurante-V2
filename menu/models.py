@@ -1,6 +1,8 @@
 from django.db import models
 from django.db.models import Sum
 from django.utils.timezone import now
+
+
 class Categoria(models.Model):
     nombre = models.CharField(max_length=100)
 
@@ -67,6 +69,41 @@ class VentaDiaria(models.Model):
 
     def __str__(self):
         return f"Ventas {self.fecha}: {self.total}"
-    
+
+
+class Venta(models.Model):
+    pedido = models.OneToOneField(
+        Pedido,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="venta",
+    )
+    fecha = models.DateField(default=now)
+    creado_en = models.DateTimeField(default=now)
+    ticket_numero = models.PositiveIntegerField(null=True, blank=True)
+    mesa_nombre = models.CharField(max_length=50, default="Sin mesa")
+    total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+
+    class Meta:
+        ordering = ["-creado_en"]
+
+    def __str__(self):
+        return f"Venta #{self.id} - {self.fecha}: {self.total}"
+
+
+class VentaItem(models.Model):
+    venta = models.ForeignKey(Venta, on_delete=models.CASCADE, related_name="items")
+    producto_nombre = models.CharField(max_length=100)
+    cantidad = models.PositiveIntegerField(default=1)
+    observaciones = models.CharField(max_length=255, default="con todo")
+    precio_unitario = models.DecimalField(max_digits=8, decimal_places=2)
+    subtotal = models.DecimalField(max_digits=10, decimal_places=2)
+
+    class Meta:
+        ordering = ["id"]
+
+    def __str__(self):
+        return f"{self.producto_nombre} x{self.cantidad}"
 
 

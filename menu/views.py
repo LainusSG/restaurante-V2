@@ -10,10 +10,11 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_http_methods
 from django.core.paginator import Paginator
+from django.db import transaction
 from django.db.models import Sum
 from django.db.models.functions import TruncDay, TruncMonth, TruncYear
 
-from .models import Categoria, Producto, Pedido, PedidoItem, Mesa, VentaDiaria
+from .models import Categoria, Producto, Pedido, PedidoItem, Mesa, VentaDiaria, Venta, VentaItem
 from .forms import CategoriaForm, ProductoForm, MesaForm
 
 
@@ -110,6 +111,34 @@ def confirmar_pedido(request, mesa_id, pedido_id):
     return redirect("menu", mesa_id=mesa.id)
 
 
+def _crear_venta_desde_pedido(pedido):
+    venta, creada = Venta.objects.get_or_create(
+        pedido=pedido,
+        defaults={
+            "fecha": now().date(),
+            "creado_en": now(),
+            "ticket_numero": pedido.id,
+            "mesa_nombre": pedido.mesa.nombre if pedido.mesa else "Sin mesa",
+            "total": pedido.total,
+        },
+    )
+
+    if creada:
+        VentaItem.objects.bulk_create([
+            VentaItem(
+                venta=venta,
+                producto_nombre=item.producto.nombre,
+                cantidad=item.cantidad,
+                observaciones=item.observaciones,
+                precio_unitario=item.producto.precio,
+                subtotal=item.subtotal(),
+            )
+            for item in pedido.items.select_related("producto").all()
+        ])
+
+    return venta
+
+
 def generar_ticket(request, mesa_id, pedido_id):
     mesa = get_object_or_404(Mesa, id=mesa_id)
     pedido = get_object_or_404(Pedido, id=pedido_id, mesa=mesa, confirmado=True, entregado=False)
@@ -118,19 +147,30 @@ def generar_ticket(request, mesa_id, pedido_id):
     if pedido.items.filter(surtido=False).exists():
         return redirect("menu", mesa_id=mesa.id)
 
-    pedido.calcular_total()
-    pedido.entregado = True
-    pedido.save()
+    with transaction.atomic():
+        pedido.calcular_total()
+        venta = _crear_venta_desde_pedido(pedido)
+        pedido.entregado = True
+        pedido.save()
 
-    mesa.ocupada = False
-    mesa.save()
+        mesa.ocupada = False
+        mesa.save()
 
-    fecha_hoy = now().date()
-    venta, _ = VentaDiaria.objects.get_or_create(fecha=fecha_hoy)
-    venta.total += pedido.total
-    venta.save()
+        venta_diaria, _ = VentaDiaria.objects.get_or_create(fecha=venta.fecha)
+        venta_diaria.total += venta.total
+        venta_diaria.save()
 
-    return render(request, "menu/ticket.html", {"pedido": pedido})
+    return render(request, "menu/ticket.html", {"pedido": pedido, "venta": venta})
+
+
+def detalle_venta(request, venta_id):
+    venta = get_object_or_404(Venta.objects.prefetch_related("items"), id=venta_id)
+    return render(request, "menu/detalle_venta.html", {"venta": venta})
+
+
+def reimprimir_ticket(request, venta_id):
+    venta = get_object_or_404(Venta.objects.prefetch_related("items"), id=venta_id)
+    return render(request, "menu/ticket.html", {"venta": venta, "reimpresion": True})
 
 
 
@@ -292,13 +332,17 @@ def dashboard_ventas(request):
     filtro = request.GET.get("filtro", "dia")
 
     ventas = VentaDiaria.objects.all().order_by("fecha")
+    ventas_individuales = Venta.objects.all().order_by("-creado_en")
     consulta_total = _consulta_total_ventas(request, ventas)
 
-    if consulta_total["datos"] is not None:
+    if consulta_total["datos"] is not None and consulta_total["tipo"] == "dia":
+        filtro = "dia"
+        datos = ventas_individuales.filter(fecha=date.fromisoformat(consulta_total["valor"]))
+    elif consulta_total["datos"] is not None:
         filtro = consulta_total["tipo"]
         datos = consulta_total["datos"]
     elif filtro == "dia":
-        datos = ventas.annotate(periodo=TruncDay("fecha")).values("periodo").annotate(total=Sum("total")).order_by("periodo")
+        datos = ventas_individuales
     elif filtro == "semana":
         datos = _ventas_por_semana_desde_enero(ventas)
     elif filtro == "mes":
@@ -307,17 +351,23 @@ def dashboard_ventas(request):
         datos = ventas.annotate(periodo=TruncYear("fecha")).values("periodo").annotate(total=Sum("total")).order_by("periodo")
     else:
         filtro = "dia"
-        datos = ventas.annotate(periodo=TruncDay("fecha")).values("periodo").annotate(total=Sum("total")).order_by("periodo")
+        datos = ventas_individuales
 
     datos = list(datos)
     for dato in datos:
-        dato["periodo_label"] = _periodo_label(dato["periodo"], filtro)
+        if isinstance(dato, Venta):
+            dato.periodo_label = f"{_fecha_corta(dato.fecha)} {dato.creado_en.strftime('%H:%M')}"
+        else:
+            dato["periodo_label"] = _periodo_label(dato["periodo"], filtro)
 
-    labels = [d["periodo_label"] for d in datos]
-    valores = [float(d["total"]) for d in datos]
+    labels = [d.periodo_label if isinstance(d, Venta) else d["periodo_label"] for d in datos]
+    valores = [float(d.total if isinstance(d, Venta) else d["total"]) for d in datos]
     total_general_label = f"${consulta_total['total']:,.2f}"
     paginator = Paginator(datos, 15)
     page_obj = paginator.get_page(request.GET.get("page"))
+    pagination_params = request.GET.copy()
+    pagination_params.pop("page", None)
+    pagination_query = pagination_params.urlencode()
 
     return render(request, "menu/dashboard.html", {
         "filtro": filtro,
@@ -327,6 +377,7 @@ def dashboard_ventas(request):
         "consulta_total": consulta_total,
         "datos": page_obj,
         "page_obj": page_obj,
+        "pagination_query": pagination_query,
     })
 
 

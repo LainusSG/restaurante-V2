@@ -540,6 +540,10 @@ col.total-col {
     width: 50%;
 }
 
+col.action-col {
+    width: 24%;
+}
+
 thead {
     background: #2b211b;
     color: #fff;
@@ -1347,6 +1351,12 @@ select.form-input {
     margin: 24px 0;
     color: var(--muted);
     text-align: center;
+}
+
+.venta-total {
+    margin: 22px 0 0;
+    text-align: right;
+    font-size: 1.25rem;
 }
 
 @media (max-width: 860px) {
