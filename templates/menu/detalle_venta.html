@@ -12,6 +12,11 @@
             <div>
                 <h2>Ticket #{{ venta.ticket_numero|default:venta.id }}</h2>
                 <p>{{ venta.creado_en|date:"d/m/Y H:i" }} - Mesa {{ venta.mesa_nombre }}</p>
+                <p>
+                    Pago: {{ venta.get_metodo_pago_display }} - {{ venta.get_estado_pago_display }}
+                    {% if venta.cliente %} - Cliente: {{ venta.cliente.nombre }}{% endif %}
+                    {% if venta.saldo_pendiente > 0 %} - Saldo: ${{ venta.saldo_pendiente }}{% endif %}
+                </p>
             </div>
             <div class="toolbar">
                 <a href="{% url 'dashboard' %}?filtro=dia" class="btn btn-secondary">Volver</a>

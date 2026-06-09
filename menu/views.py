@@ -1,4 +1,4 @@
-import calendar
+﻿import calendar
 import json
 from decimal import Decimal
 from datetime import date, timedelta
@@ -17,7 +17,9 @@ from django.db.models import Sum
 from django.db.models.functions import TruncDay, TruncMonth, TruncYear
 
 from .models import (
+    CajaMovimiento,
     Categoria,
+    Cliente,
     IngresoMercancia,
     Producto,
     ProductoAlmacen,
@@ -30,7 +32,10 @@ from .models import (
     VentaItem,
 )
 from .forms import (
+    AbonoClienteForm,
     CategoriaForm,
+    CerrarVentaForm,
+    ClienteForm,
     IngresoMercanciaForm,
     ProductoAlmacenForm,
     ProductoForm,
@@ -47,7 +52,7 @@ admin_required = user_passes_test(_es_admin, login_url="login")
 
 
 # =====================
-# Selección de mesa
+# SelecciÃ³n de mesa
 # =====================
 def seleccionar_mesa(request):
     mesas = Mesa.objects.all()
@@ -55,7 +60,7 @@ def seleccionar_mesa(request):
 
 
 # =====================
-# Menú y pedidos
+# MenÃº y pedidos
 # =====================
 def menu_view(request, mesa_id):
     mesa = get_object_or_404(Mesa, id=mesa_id)
@@ -68,7 +73,7 @@ def menu_view(request, mesa_id):
 
     pedido.calcular_total()
 
-    # ✅ Revisar si todos los items ya fueron surtidos
+    # âœ… Revisar si todos los items ya fueron surtidos
     todos_entregados = not pedido.items.filter(surtido=False).exists()
 
     return render(request, "menu/menu.html", {
@@ -93,7 +98,7 @@ def agregar_al_pedido(request, mesa_id, producto_id):
         observaciones = "con todo"
     es_cortesia = request.POST.get("es_cortesia") == "on"
 
-    # 🚨 Siempre crear un nuevo item
+    # ðŸš¨ Siempre crear un nuevo item
     PedidoItem.objects.create(
         pedido=pedido,
         producto=producto,
@@ -103,7 +108,7 @@ def agregar_al_pedido(request, mesa_id, producto_id):
         confirmado=False
     )
 
-    # 🚨 Si ya estaba confirmado, volver a marcarlo como NO confirmado
+    # ðŸš¨ Si ya estaba confirmado, volver a marcarlo como NO confirmado
     if pedido.confirmado:
         pedido.confirmado = False
         pedido.save()
@@ -141,7 +146,8 @@ def confirmar_pedido(request, mesa_id, pedido_id):
     return redirect("menu", mesa_id=mesa.id)
 
 
-def _crear_venta_desde_pedido(pedido):
+def _crear_venta_desde_pedido(pedido, metodo_pago=Venta.MetodoPago.EFECTIVO, cliente=None):
+    es_fiado = metodo_pago == Venta.MetodoPago.FIADO
     venta, creada = Venta.objects.get_or_create(
         pedido=pedido,
         defaults={
@@ -150,6 +156,10 @@ def _crear_venta_desde_pedido(pedido):
             "ticket_numero": pedido.id,
             "mesa_nombre": pedido.mesa.nombre if pedido.mesa else "Sin mesa",
             "total": pedido.total,
+            "metodo_pago": metodo_pago,
+            "estado_pago": Venta.EstadoPago.PENDIENTE if es_fiado else Venta.EstadoPago.SALDADA,
+            "cliente": cliente,
+            "saldo_pendiente": pedido.total if es_fiado else 0,
         },
     )
 
@@ -169,6 +179,25 @@ def _crear_venta_desde_pedido(pedido):
         ])
 
     return venta
+
+
+def _registrar_entrada_caja(monto, metodo_pago, tipo, venta=None, cliente=None, descripcion=""):
+    if monto <= 0:
+        return None
+
+    movimiento = CajaMovimiento.objects.create(
+        tipo=tipo,
+        metodo_pago=metodo_pago,
+        monto=monto,
+        fecha=now().date(),
+        venta=venta,
+        cliente=cliente,
+        descripcion=descripcion,
+    )
+    venta_diaria, _ = VentaDiaria.objects.get_or_create(fecha=movimiento.fecha)
+    venta_diaria.total += monto
+    venta_diaria.save(update_fields=["total"])
+    return movimiento
 
 
 def _descontar_inventario_desde_pedido(pedido):
@@ -221,9 +250,24 @@ def generar_ticket(request, mesa_id, pedido_id):
     mesa = get_object_or_404(Mesa, id=mesa_id)
     pedido = get_object_or_404(Pedido, id=pedido_id, mesa=mesa, confirmado=True, entregado=False)
 
-    # 🚨 Solo permitir si todos los items están surtidos
     if pedido.items.filter(surtido=False).exists():
         return redirect("menu", mesa_id=mesa.id)
+
+    pedido.calcular_total()
+    form = CerrarVentaForm(request.POST or None)
+    if request.method != "POST":
+        return render(request, "menu/cerrar_venta.html", {
+            "form": form,
+            "pedido": pedido,
+            "mesa": mesa,
+        })
+
+    if not form.is_valid():
+        return render(request, "menu/cerrar_venta.html", {
+            "form": form,
+            "pedido": pedido,
+            "mesa": mesa,
+        })
 
     with transaction.atomic():
         pedido.calcular_total()
@@ -232,19 +276,25 @@ def generar_ticket(request, mesa_id, pedido_id):
             messages.error(request, "Inventario insuficiente: " + "; ".join(faltantes))
             return redirect("menu", mesa_id=mesa.id)
 
-        venta = _crear_venta_desde_pedido(pedido)
+        metodo_pago = form.cleaned_data["metodo_pago"]
+        cliente = form.cleaned_data["cliente"]
+        venta = _crear_venta_desde_pedido(pedido, metodo_pago=metodo_pago, cliente=cliente)
+        if metodo_pago != Venta.MetodoPago.FIADO:
+            _registrar_entrada_caja(
+                venta.total,
+                metodo_pago,
+                CajaMovimiento.Tipo.VENTA,
+                venta=venta,
+                descripcion=f"Venta ticket #{venta.ticket_numero or venta.id}",
+            )
+
         pedido.entregado = True
         pedido.save()
 
         mesa.ocupada = False
         mesa.save()
 
-        venta_diaria, _ = VentaDiaria.objects.get_or_create(fecha=venta.fecha)
-        venta_diaria.total += venta.total
-        venta_diaria.save()
-
     return render(request, "menu/ticket.html", {"pedido": pedido, "venta": venta})
-
 
 def detalle_venta(request, venta_id):
     venta = get_object_or_404(Venta.objects.prefetch_related("items"), id=venta_id)
@@ -254,6 +304,122 @@ def detalle_venta(request, venta_id):
 def reimprimir_ticket(request, venta_id):
     venta = get_object_or_404(Venta.objects.prefetch_related("items"), id=venta_id)
     return render(request, "menu/ticket.html", {"venta": venta, "reimpresion": True})
+
+
+def listar_clientes(request):
+    busqueda = request.GET.get("q", "").strip()
+    clientes = Cliente.objects.all()
+    if busqueda:
+        clientes = clientes.filter(nombre__icontains=busqueda)
+
+    for cliente in clientes:
+        cliente.deuda_actual = cliente.deuda_total
+
+    return render(request, "menu/clientes.html", {
+        "clientes": clientes,
+        "busqueda": busqueda,
+    })
+
+
+def crear_cliente(request):
+    if request.method == "POST":
+        form = ClienteForm(request.POST)
+        if form.is_valid():
+            cliente = form.save()
+            messages.success(request, "Cliente creado correctamente")
+            return redirect("detalle_cliente", cliente_id=cliente.id)
+    else:
+        form = ClienteForm()
+    return render(request, "menu/cliente_form.html", {"form": form, "titulo": "Crear cliente"})
+
+
+def editar_cliente(request, cliente_id):
+    cliente = get_object_or_404(Cliente, id=cliente_id)
+    if request.method == "POST":
+        form = ClienteForm(request.POST, instance=cliente)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Cliente actualizado correctamente")
+            return redirect("detalle_cliente", cliente_id=cliente.id)
+    else:
+        form = ClienteForm(instance=cliente)
+    return render(request, "menu/cliente_form.html", {
+        "form": form,
+        "cliente": cliente,
+        "titulo": "Editar cliente",
+    })
+
+
+def detalle_cliente(request, cliente_id):
+    cliente = get_object_or_404(Cliente, id=cliente_id)
+    ventas_pendientes = cliente.ventas.filter(
+        estado_pago=Venta.EstadoPago.PENDIENTE
+    ).prefetch_related("items").order_by("creado_en")
+    ventas_saldadas = cliente.ventas.filter(
+        estado_pago=Venta.EstadoPago.SALDADA
+    ).prefetch_related("items").order_by("-creado_en")
+    deuda_total = ventas_pendientes.aggregate(total=Sum("saldo_pendiente"))["total"] or 0
+
+    if request.method == "POST":
+        form = AbonoClienteForm(request.POST)
+        if form.is_valid():
+            monto = form.cleaned_data["monto"]
+            metodo_pago = form.cleaned_data["metodo_pago"]
+
+            if monto > deuda_total:
+                form.add_error("monto", "El abono no puede ser mayor a la deuda total")
+            else:
+                restante = monto
+                with transaction.atomic():
+                    ventas_para_abono = cliente.ventas.select_for_update().filter(
+                        estado_pago=Venta.EstadoPago.PENDIENTE
+                    ).order_by("creado_en")
+                    for venta in ventas_para_abono:
+                        if restante <= 0:
+                            break
+                        aplicado = min(restante, venta.saldo_pendiente)
+                        venta.saldo_pendiente -= aplicado
+                        if venta.saldo_pendiente <= 0:
+                            venta.saldo_pendiente = 0
+                            venta.estado_pago = Venta.EstadoPago.SALDADA
+                        venta.save(update_fields=["saldo_pendiente", "estado_pago"])
+                        _registrar_entrada_caja(
+                            aplicado,
+                            metodo_pago,
+                            CajaMovimiento.Tipo.ABONO,
+                            venta=venta,
+                            cliente=cliente,
+                            descripcion=f"Abono cliente {cliente.nombre}",
+                        )
+                        restante -= aplicado
+
+                messages.success(request, "Abono registrado correctamente")
+                return redirect("detalle_cliente", cliente_id=cliente.id)
+    else:
+        form = AbonoClienteForm()
+
+    movimientos = cliente.movimientos_caja.select_related("venta")[:30]
+    return render(request, "menu/cliente_detalle.html", {
+        "cliente": cliente,
+        "ventas_pendientes": ventas_pendientes,
+        "ventas_saldadas": ventas_saldadas,
+        "deuda_total": deuda_total,
+        "form": form,
+        "movimientos": movimientos,
+    })
+
+
+@require_http_methods(["POST"])
+def eliminar_cliente(request, cliente_id):
+    cliente = get_object_or_404(Cliente, id=cliente_id)
+    if cliente.ventas.exists():
+        cliente.activo = False
+        cliente.save(update_fields=["activo"])
+        messages.success(request, "Cliente desactivado porque tiene ventas registradas")
+    else:
+        cliente.delete()
+        messages.success(request, "Cliente eliminado correctamente")
+    return redirect("listar_clientes")
 
 
 
@@ -315,7 +481,7 @@ def _periodo_label(periodo, filtro):
         fin = date(inicio.year, inicio.month, ultimo_dia)
         return f"{_fecha_corta(inicio)} - {_fecha_corta(fin)}"
 
-    if filtro in ("año", "aÃ±o"):
+    if filtro in ("aÃ±o", "aÃƒÂ±o"):
         fin = date(inicio.year, 12, 31)
         return f"{_fecha_corta(inicio)} - {_fecha_corta(fin)}"
 
@@ -350,6 +516,33 @@ def _sumar_ventas(ventas):
     return ventas.aggregate(total=Sum("total"))["total"] or 0
 
 
+def _sumar_movimientos(movimientos):
+    return movimientos.aggregate(total=Sum("monto"))["total"] or 0
+
+
+def _consulta_caja_fisica(request):
+    hoy = now().date()
+    tipo = request.GET.get("total_tipo", "dia")
+    valor = request.GET.get("total_valor", "")
+    movimientos = CajaMovimiento.objects.filter(metodo_pago=Venta.MetodoPago.EFECTIVO)
+
+    try:
+        if valor and tipo == "mes":
+            ano, mes = [int(parte) for parte in valor.split("-", 1)]
+            total = _sumar_movimientos(movimientos.filter(fecha__year=ano, fecha__month=mes))
+        elif valor and tipo in ("aÃ±o", "ano"):
+            ano = int(valor)
+            total = _sumar_movimientos(movimientos.filter(fecha__year=ano))
+        elif valor:
+            total = _sumar_movimientos(movimientos.filter(fecha=date.fromisoformat(valor)))
+        else:
+            total = _sumar_movimientos(movimientos.filter(fecha=hoy))
+    except (TypeError, ValueError):
+        total = _sumar_movimientos(movimientos.filter(fecha=hoy))
+
+    return total
+
+
 def _consulta_total_ventas(request, ventas):
     hoy = now().date()
     tipo = request.GET.get("total_tipo", "dia")
@@ -379,14 +572,14 @@ def _consulta_total_ventas(request, ventas):
                 "datos": [{"periodo": inicio, "total": total}],
             }
 
-        if tipo in ("año", "ano"):
+        if tipo in ("aÃ±o", "ano"):
             ano = int(valor)
             inicio = date(ano, 1, 1)
             total = _sumar_ventas(ventas.filter(fecha__year=ano))
             return {
-                "tipo": "año",
+                "tipo": "aÃ±o",
                 "valor": valor,
-                "label": _periodo_label(inicio, "año"),
+                "label": _periodo_label(inicio, "aÃ±o"),
                 "total": total,
                 "datos": [{"periodo": inicio, "total": total}],
             }
@@ -415,22 +608,23 @@ def dashboard_ventas(request):
     filtro = request.GET.get("filtro", "dia")
 
     ventas = VentaDiaria.objects.all().order_by("fecha")
-    ventas_individuales = Venta.objects.all().order_by("-creado_en")
+    movimientos_caja = CajaMovimiento.objects.select_related("venta", "cliente").order_by("-creado_en")
     consulta_total = _consulta_total_ventas(request, ventas)
+    caja_fisica_total = _consulta_caja_fisica(request)
 
     if consulta_total["datos"] is not None and consulta_total["tipo"] == "dia":
         filtro = "dia"
-        datos = ventas_individuales.filter(fecha=date.fromisoformat(consulta_total["valor"]))
+        datos = movimientos_caja.filter(fecha=date.fromisoformat(consulta_total["valor"]))
     elif consulta_total["datos"] is not None:
         filtro = consulta_total["tipo"]
         datos = consulta_total["datos"]
     elif filtro == "dia":
-        datos = ventas_individuales
+        datos = movimientos_caja
     elif filtro == "semana":
         datos = _ventas_por_semana_desde_enero(ventas)
     elif filtro == "mes":
         datos = ventas.annotate(periodo=TruncMonth("fecha")).values("periodo").annotate(total=Sum("total")).order_by("periodo")
-    elif filtro == "año":
+    elif filtro == "aÃ±o":
         datos = ventas.annotate(periodo=TruncYear("fecha")).values("periodo").annotate(total=Sum("total")).order_by("periodo")
     else:
         filtro = "dia"
@@ -438,14 +632,18 @@ def dashboard_ventas(request):
 
     datos = list(datos)
     for dato in datos:
-        if isinstance(dato, Venta):
-            dato.periodo_label = f"{_fecha_corta(dato.fecha)} {dato.creado_en.strftime('%H:%M')}"
+        if isinstance(dato, CajaMovimiento):
+            origen = "Abono" if dato.tipo == CajaMovimiento.Tipo.ABONO else "Venta"
+            mesa = f" - Mesa {dato.venta.mesa_nombre}" if dato.venta else ""
+            cliente = f" - {dato.cliente.nombre}" if dato.cliente else ""
+            dato.periodo_label = f"{origen} {_fecha_corta(dato.fecha)} {dato.creado_en.strftime('%H:%M')}{mesa}{cliente}"
         else:
             dato["periodo_label"] = _periodo_label(dato["periodo"], filtro)
 
-    labels = [d.periodo_label if isinstance(d, Venta) else d["periodo_label"] for d in datos]
-    valores = [float(d.total if isinstance(d, Venta) else d["total"]) for d in datos]
+    labels = [d.periodo_label if isinstance(d, CajaMovimiento) else d["periodo_label"] for d in datos]
+    valores = [float(d.monto if isinstance(d, CajaMovimiento) else d["total"]) for d in datos]
     total_general_label = f"${consulta_total['total']:,.2f}"
+    caja_fisica_label = f"${caja_fisica_total:,.2f}"
     paginator = Paginator(datos, 15)
     page_obj = paginator.get_page(request.GET.get("page"))
     pagination_params = request.GET.copy()
@@ -457,6 +655,7 @@ def dashboard_ventas(request):
         "labels": json.dumps(labels),
         "valores": json.dumps(valores),
         "total_general_label": total_general_label,
+        "caja_fisica_label": caja_fisica_label,
         "consulta_total": consulta_total,
         "datos": page_obj,
         "page_obj": page_obj,
@@ -465,7 +664,7 @@ def dashboard_ventas(request):
 
 
 # =====================
-# CRUD Categorías y Productos
+# CRUD CategorÃ­as y Productos
 # =====================
 @admin_required
 def crear_categoria(request):
@@ -627,7 +826,7 @@ def crear_mesa(request):
         form = MesaForm(request.POST)
         if form.is_valid():
             form.save()
-            messages.success(request, "Mesa creada correctamente ✅")
+            messages.success(request, "Mesa creada correctamente âœ…")
             return redirect("listar_mesas")
     else:
         form = MesaForm()
@@ -653,3 +852,4 @@ def Menu_cliente(request):
     return render(request, "menu/menu_cliente.html", {
         "categorias": categorias
     })
+

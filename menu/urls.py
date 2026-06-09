@@ -23,6 +23,11 @@ urlpatterns = [
     path("dashboard/", views.dashboard_ventas, name="dashboard"),
     path("ventas/<int:venta_id>/", views.detalle_venta, name="detalle_venta"),
     path("ventas/<int:venta_id>/ticket/", views.reimprimir_ticket, name="reimprimir_ticket"),
+    path("clientes/", views.listar_clientes, name="listar_clientes"),
+    path("clientes/crear/", views.crear_cliente, name="crear_cliente"),
+    path("clientes/<int:cliente_id>/", views.detalle_cliente, name="detalle_cliente"),
+    path("clientes/<int:cliente_id>/editar/", views.editar_cliente, name="editar_cliente"),
+    path("clientes/<int:cliente_id>/eliminar/", views.eliminar_cliente, name="eliminar_cliente"),
 
     # CRUD Menú
     path("administrador", views.crear_menu, name="crear_menu"),

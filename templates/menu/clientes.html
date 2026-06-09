@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}Clientes{% endblock %}
+{% block body_class %}app-page dashboard-page{% endblock %}
+
+{% block page %}
+{% include "components/page_hero.html" with compact=True eyebrow="Clientes" title="Cuentas y fiados" subtitle="Administra clientes y revisa sus saldos pendientes." %}
+
+<main class="page-shell">
+    <div class="toolbar">
+        <form method="get" class="inventory-filter">
+            <label>
+                Buscar cliente
+                <input type="search" name="q" value="{{ busqueda }}" class="form-input" placeholder="Nombre">
+            </label>
+            <button type="submit" class="btn">Buscar</button>
+            <a href="{% url 'crear_cliente' %}" class="btn btn-secondary">Crear cliente</a>
+        </form>
+    </div>
+
+    <section class="table-card">
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Cliente</th>
+                        <th>Telefono</th>
+                        <th>Deuda</th>
+                        <th>Estado</th>
+                        <th>Accion</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cliente in clientes %}
+                        <tr>
+                            <td>{{ cliente.nombre }}</td>
+                            <td>{{ cliente.telefono|default:"-" }}</td>
+                            <td>${{ cliente.deuda_actual }}</td>
+                            <td>{% if cliente.activo %}Activo{% else %}Inactivo{% endif %}</td>
+                            <td><a href="{% url 'detalle_cliente' cliente.id %}" class="btn btn-secondary">Ver cliente</a></td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="5" class="empty-state">No hay clientes registrados.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+</main>
+{% endblock %}

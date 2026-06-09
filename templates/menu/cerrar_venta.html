@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block title %}Cobrar mesa {{ mesa.nombre }}{% endblock %}
+{% block body_class %}app-page dashboard-page{% endblock %}
+
+{% block page %}
+{% include "components/page_hero.html" with compact=True eyebrow="Cobro" title="Cerrar venta" subtitle="Selecciona el metodo de pago antes de generar el ticket." %}
+
+<main class="page-shell">
+    <section class="content-card">
+        <div class="section-heading">
+            <div>
+                <h2>Mesa {{ mesa.nombre }}</h2>
+                <p>Total a cobrar: <strong>${{ pedido.total }}</strong></p>
+            </div>
+            <a href="{% url 'menu' mesa.id %}" class="btn btn-secondary">Volver</a>
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Producto</th>
+                        <th>Cantidad</th>
+                        <th>Subtotal</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in pedido.items.all %}
+                        <tr>
+                            <td>{{ item.producto.nombre }}</td>
+                            <td>{{ item.cantidad }}</td>
+                            <td>${{ item.subtotal }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <form method="post" class="app-form payment-form">
+            {% csrf_token %}
+            {% include "components/form_field.html" with field=form.metodo_pago %}
+            <div id="clienteField">
+                {% include "components/form_field.html" with field=form.cliente %}
+                <a href="{% url 'crear_cliente' %}" class="back-link">Crear cliente nuevo</a>
+            </div>
+            {% if form.non_field_errors %}
+                <div class="form-alert form-alert--error">{{ form.non_field_errors }}</div>
+            {% endif %}
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Cerrar venta</button>
+            </div>
+        </form>
+    </section>
+</main>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const metodoPago = document.getElementById("id_metodo_pago");
+const clienteField = document.getElementById("clienteField");
+
+function actualizarCliente() {
+    clienteField.style.display = metodoPago.value === "fiado" ? "grid" : "none";
+}
+
+metodoPago.addEventListener("change", actualizarCliente);
+actualizarCliente();
+</script>
+{% endblock %}

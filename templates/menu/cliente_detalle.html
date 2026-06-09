@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+
+{% block title %}{{ cliente.nombre }}{% endblock %}
+{% block body_class %}app-page dashboard-page{% endblock %}
+
+{% block page %}
+{% include "components/page_hero.html" with compact=True eyebrow="Cliente" title=cliente.nombre subtitle="Historial de tickets, deudas y abonos." %}
+
+<main class="page-shell">
+    <section class="dashboard-grid">
+        <article class="content-card metric-card">
+            <span>Deuda actual</span>
+            <strong>${{ deuda_total }}</strong>
+            <p>Saldo pendiente por ventas fiadas.</p>
+        </article>
+        <article class="content-card metric-card">
+            <span>Telefono</span>
+            <strong>{{ cliente.telefono|default:"-" }}</strong>
+            <p>{% if cliente.activo %}Cliente activo{% else %}Cliente inactivo{% endif %}</p>
+        </article>
+    </section>
+
+    <div class="toolbar">
+        <a href="{% url 'listar_clientes' %}" class="btn btn-secondary">Volver</a>
+        <a href="{% url 'editar_cliente' cliente.id %}" class="btn">Editar</a>
+    </div>
+
+    <section class="content-card">
+        <div class="section-heading">
+            <h2>Registrar abono</h2>
+            <p>El abono se aplica a las deudas mas antiguas.</p>
+        </div>
+        <form method="post" class="app-form payment-form">
+            {% csrf_token %}
+            {% for field in form %}
+                {% include "components/form_field.html" with field=field %}
+            {% endfor %}
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary" {% if deuda_total <= 0 %}disabled{% endif %}>Registrar pago</button>
+            </div>
+        </form>
+    </section>
+
+    <section class="table-card content-card">
+        <div class="section-heading">
+            <h2>Deudas pendientes</h2>
+        </div>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Ticket</th>
+                        <th>Fecha</th>
+                        <th>Mesa</th>
+                        <th>Total</th>
+                        <th>Saldo</th>
+                        <th>Accion</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for venta in ventas_pendientes %}
+                        <tr>
+                            <td>#{{ venta.ticket_numero|default:venta.id }}</td>
+                            <td>{{ venta.creado_en|date:"d/m/Y H:i" }}</td>
+                            <td>{{ venta.mesa_nombre }}</td>
+                            <td>${{ venta.total }}</td>
+                            <td>${{ venta.saldo_pendiente }}</td>
+                            <td><a href="{% url 'detalle_venta' venta.id %}" class="btn btn-secondary">Ver venta</a></td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="6" class="empty-state">No hay deudas pendientes.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="table-card content-card">
+        <div class="section-heading">
+            <h2>Ventas saldadas</h2>
+        </div>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Ticket</th>
+                        <th>Fecha venta</th>
+                        <th>Mesa</th>
+                        <th>Total</th>
+                        <th>Accion</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for venta in ventas_saldadas %}
+                        <tr>
+                            <td>#{{ venta.ticket_numero|default:venta.id }}</td>
+                            <td>{{ venta.creado_en|date:"d/m/Y H:i" }}</td>
+                            <td>{{ venta.mesa_nombre }}</td>
+                            <td>${{ venta.total }}</td>
+                            <td><a href="{% url 'detalle_venta' venta.id %}" class="btn btn-secondary">Ver venta</a></td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="5" class="empty-state">Aun no hay ventas saldadas.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="table-card content-card">
+        <div class="section-heading">
+            <h2>Ultimos pagos</h2>
+        </div>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Metodo</th>
+                        <th>Monto</th>
+                        <th>Ticket</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for movimiento in movimientos %}
+                        <tr>
+                            <td>{{ movimiento.creado_en|date:"d/m/Y H:i" }}</td>
+                            <td>{{ movimiento.get_metodo_pago_display }}</td>
+                            <td>${{ movimiento.monto }}</td>
+                            <td>{% if movimiento.venta %}#{{ movimiento.venta.ticket_numero|default:movimiento.venta.id }}{% else %}-{% endif %}</td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="4" class="empty-state">No hay pagos registrados.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+</main>
+{% endblock %}

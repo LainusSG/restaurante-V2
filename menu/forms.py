@@ -1,6 +1,6 @@
 from django import forms
 from django.core.exceptions import ValidationError
-from .models import Categoria, IngresoMercancia, Producto, ProductoAlmacen, Proveedor, Mesa
+from .models import Categoria, Cliente, IngresoMercancia, Producto, ProductoAlmacen, Proveedor, Mesa, Venta
 
 class MesaForm(forms.ModelForm):
     nombre = forms.CharField(
@@ -283,3 +283,77 @@ class IngresoMercanciaForm(forms.ModelForm):
             self.add_error("cantidad", "La cantidad debe ser mayor a 0")
 
         return cleaned_data
+
+
+class ClienteForm(forms.ModelForm):
+    class Meta:
+        model = Cliente
+        fields = ["nombre", "telefono", "direccion", "notas", "activo"]
+        widgets = {
+            "nombre": forms.TextInput(attrs={"class": "form-input", "placeholder": "Nombre del cliente"}),
+            "telefono": forms.TextInput(attrs={"class": "form-input", "placeholder": "Telefono"}),
+            "direccion": forms.Textarea(attrs={"class": "form-input", "rows": 3}),
+            "notas": forms.Textarea(attrs={"class": "form-input", "rows": 3}),
+            "activo": forms.CheckboxInput(),
+        }
+
+    def clean_nombre(self):
+        nombre = self.cleaned_data.get("nombre", "").strip()
+        if not nombre:
+            raise ValidationError("El nombre del cliente no puede estar vacio")
+        return nombre
+
+
+class CerrarVentaForm(forms.Form):
+    metodo_pago = forms.ChoiceField(
+        label="Metodo de pago",
+        choices=Venta.MetodoPago.choices,
+        widget=forms.Select(attrs={"class": "form-input", "id": "id_metodo_pago"}),
+    )
+    cliente = forms.ModelChoiceField(
+        label="Cliente",
+        queryset=Cliente.objects.none(),
+        required=False,
+        widget=forms.Select(attrs={"class": "form-input", "id": "id_cliente"}),
+        help_text="Requerido cuando el pago se manda a deuda o fiado",
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["cliente"].queryset = Cliente.objects.filter(activo=True)
+
+    def clean(self):
+        cleaned_data = super().clean()
+        metodo_pago = cleaned_data.get("metodo_pago")
+        cliente = cleaned_data.get("cliente")
+
+        if metodo_pago == Venta.MetodoPago.FIADO and not cliente:
+            self.add_error("cliente", "Selecciona el cliente al que se cargara la deuda")
+
+        if metodo_pago != Venta.MetodoPago.FIADO:
+            cleaned_data["cliente"] = None
+
+        return cleaned_data
+
+
+class AbonoClienteForm(forms.Form):
+    monto = forms.DecimalField(
+        label="Cantidad a pagar",
+        max_digits=10,
+        decimal_places=2,
+        min_value=0.01,
+        widget=forms.NumberInput(attrs={
+            "class": "form-input",
+            "step": "0.01",
+            "min": "0.01",
+            "placeholder": "0.00",
+        }),
+    )
+    metodo_pago = forms.ChoiceField(
+        label="Metodo de pago",
+        choices=[
+            (Venta.MetodoPago.EFECTIVO, "Efectivo"),
+            (Venta.MetodoPago.TRANSFERENCIA, "Deposito o transferencia"),
+        ],
+        widget=forms.Select(attrs={"class": "form-input"}),
+    )

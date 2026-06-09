@@ -10,6 +10,10 @@
         <p><strong>Ticket:</strong> #{{ venta.ticket_numero|default:venta.id }}</p>
         <p><strong>Fecha:</strong> {{ venta.creado_en|date:"d/m/Y H:i" }}</p>
         <p><strong>Mesa:</strong> {{ venta.mesa_nombre }}</p>
+        <p><strong>Pago:</strong> {{ venta.get_metodo_pago_display }}</p>
+        {% if venta.cliente %}
+            <p><strong>Cliente:</strong> {{ venta.cliente.nombre }}</p>
+        {% endif %}
     {% else %}
         <p><strong>Ticket:</strong> #{{ pedido.id }}</p>
         <p><strong>Fecha:</strong> {{ pedido.creado_en|date:"d/m/Y H:i" }}</p>
@@ -48,6 +52,9 @@
     </ul>
     <hr>
     <p class="total">TOTAL: ${% if venta %}{{ venta.total }}{% else %}{{ pedido.total }}{% endif %}</p>
+    {% if venta and venta.estado_pago == "pendiente" %}
+        <p><strong>Saldo pendiente:</strong> ${{ venta.saldo_pendiente }}</p>
+    {% endif %}
     <hr>
     <div class="ticket-footer">
         Gracias por tu compra<br>Restaurante XYZ

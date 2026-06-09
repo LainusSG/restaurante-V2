@@ -84,7 +84,7 @@
                         <button type="submit" class="btn-success">Confirmar pedido</button>
                     </form>
                 {% elif todos_entregados %}
-                    <a href="{% url 'generar_ticket' mesa.id pedido.id %}" class="btn btn-success">Generar ticket</a>
+                    <a href="{% url 'generar_ticket' mesa.id pedido.id %}" class="btn btn-success">Cerrar venta</a>
                 {% endif %}
             {% else %}
                 <p class="empty-state">No tienes productos en tu pedido.</p>

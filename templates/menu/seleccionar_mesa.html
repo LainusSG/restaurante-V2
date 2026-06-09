@@ -7,6 +7,16 @@
 {% include "components/page_hero.html" with compact=True eyebrow="Servicio" title="Selecciona una mesa" subtitle="Elige una mesa disponible para iniciar o continuar un pedido." %}
 
 <main class="page-shell">
+    <div class="toolbar">
+        <div class="section-heading">
+            <h2>Mesas</h2>
+        </div>
+        <div class="button-row">
+            <a href="{% url 'listar_clientes' %}" class="btn btn-secondary">Clientes</a>
+            <a href="{% url 'dashboard' %}" class="btn btn-secondary">Dashboard</a>
+        </div>
+    </div>
+
     <div class="table-grid table-grid--service">
         {% for mesa in mesas %}
             {% url 'menu' mesa.id as mesa_href %}

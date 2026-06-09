@@ -142,7 +142,37 @@ class VentaDiaria(models.Model):
         return f"Ventas {self.fecha}: {self.total}"
 
 
+class Cliente(models.Model):
+    nombre = models.CharField(max_length=150)
+    telefono = models.CharField(max_length=30, blank=True)
+    direccion = models.TextField(blank=True)
+    notas = models.TextField(blank=True)
+    activo = models.BooleanField(default=True)
+    creado_en = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["nombre"]
+
+    def __str__(self):
+        return self.nombre
+
+    @property
+    def deuda_total(self):
+        return self.ventas.filter(estado_pago=Venta.EstadoPago.PENDIENTE).aggregate(
+            total=Sum("saldo_pendiente")
+        )["total"] or 0
+
+
 class Venta(models.Model):
+    class MetodoPago(models.TextChoices):
+        EFECTIVO = "efectivo", "Efectivo"
+        TRANSFERENCIA = "transferencia", "Deposito o transferencia"
+        FIADO = "fiado", "Deuda o fiado"
+
+    class EstadoPago(models.TextChoices):
+        SALDADA = "saldada", "Saldada"
+        PENDIENTE = "pendiente", "Pendiente"
+
     pedido = models.OneToOneField(
         Pedido,
         on_delete=models.SET_NULL,
@@ -155,6 +185,24 @@ class Venta(models.Model):
     ticket_numero = models.PositiveIntegerField(null=True, blank=True)
     mesa_nombre = models.CharField(max_length=50, default="Sin mesa")
     total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    metodo_pago = models.CharField(
+        max_length=20,
+        choices=MetodoPago.choices,
+        default=MetodoPago.EFECTIVO,
+    )
+    estado_pago = models.CharField(
+        max_length=20,
+        choices=EstadoPago.choices,
+        default=EstadoPago.SALDADA,
+    )
+    cliente = models.ForeignKey(
+        Cliente,
+        on_delete=models.PROTECT,
+        related_name="ventas",
+        null=True,
+        blank=True,
+    )
+    saldo_pendiente = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 
     class Meta:
         ordering = ["-creado_en"]
@@ -178,5 +226,38 @@ class VentaItem(models.Model):
 
     def __str__(self):
         return f"{self.producto_nombre} x{self.cantidad}"
+
+
+class CajaMovimiento(models.Model):
+    class Tipo(models.TextChoices):
+        VENTA = "venta", "Venta"
+        ABONO = "abono", "Abono de deuda"
+
+    tipo = models.CharField(max_length=20, choices=Tipo.choices)
+    metodo_pago = models.CharField(max_length=20, choices=Venta.MetodoPago.choices)
+    monto = models.DecimalField(max_digits=10, decimal_places=2)
+    fecha = models.DateField(default=now)
+    creado_en = models.DateTimeField(default=now)
+    venta = models.ForeignKey(
+        Venta,
+        on_delete=models.SET_NULL,
+        related_name="movimientos_caja",
+        null=True,
+        blank=True,
+    )
+    cliente = models.ForeignKey(
+        Cliente,
+        on_delete=models.SET_NULL,
+        related_name="movimientos_caja",
+        null=True,
+        blank=True,
+    )
+    descripcion = models.CharField(max_length=180, blank=True)
+
+    class Meta:
+        ordering = ["-creado_en"]
+
+    def __str__(self):
+        return f"{self.get_tipo_display()} {self.fecha}: {self.monto}"
 
 

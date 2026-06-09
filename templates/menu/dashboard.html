@@ -18,10 +18,15 @@
             <p>Agrupacion actual del historial.</p>
         </button>
         <button class="content-card metric-card metric-card--button" id="abrirConsultaVentas" type="button">
-            <span>Ventas totales</span>
+            <span>Caja sistema</span>
             <strong>{{ total_general_label }}</strong>
             <p>{{ consulta_total.label }}</p>
         </button>
+        <article class="content-card metric-card">
+            <span>Caja fisica</span>
+            <strong>{{ caja_fisica_label }}</strong>
+            <p>Solo efectivo del periodo consultado.</p>
+        </article>
     </section>
 
     <div class="dashboard-layout">
@@ -39,7 +44,7 @@
                     </colgroup>
                     <thead>
                         <tr>
-                            <th>{% if filtro == "dia" %}Venta{% else %}Periodo{% endif %}</th>
+                            <th>{% if filtro == "dia" %}Entrada{% else %}Periodo{% endif %}</th>
                             <th>Total</th>
                             {% if filtro == "dia" %}<th>Accion</th>{% endif %}
                         </tr>
@@ -48,9 +53,15 @@
                      {% for d in datos %}
                         <tr>
                             <td>{{ d.periodo_label }}</td>
-                            <td>${{ d.total }}</td>
+                            <td>${% if filtro == "dia" %}{{ d.monto }}{% else %}{{ d.total }}{% endif %}</td>
                             {% if filtro == "dia" %}
-                                <td><a href="{% url 'detalle_venta' d.id %}" class="btn btn-secondary">Ver venta</a></td>
+                                <td>
+                                    {% if d.venta %}
+                                        <a href="{% url 'detalle_venta' d.venta.id %}" class="btn btn-secondary">Ver venta</a>
+                                    {% else %}
+                                        <span class="muted">Sin venta</span>
+                                    {% endif %}
+                                </td>
                             {% endif %}
                         </tr>
                     {% empty %}
