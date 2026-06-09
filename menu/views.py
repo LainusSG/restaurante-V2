@@ -66,7 +66,7 @@ def seleccionar_mesa(request):
 # =====================
 def menu_view(request, mesa_id):
     mesa = get_object_or_404(Mesa, id=mesa_id)
-    categorias = Categoria.objects.prefetch_related("productos").all()
+    categorias = Categoria.objects.select_related("menu").prefetch_related("productos").all()
 
     pedido, _ = Pedido.objects.get_or_create(
         mesa=mesa,
@@ -710,13 +710,15 @@ def crear_menu_restaurante(request):
 
 @admin_required
 def crear_menu(request):
-    productos = Producto.objects.select_related("menu").order_by("menu__orden", "menu__nombre", "nombre")
-    categorias = Categoria.objects.all().prefetch_related(
+    productos = Producto.objects.select_related("categoria").order_by("nombre")
+    categorias = Categoria.objects.prefetch_related(
         Prefetch("productos", queryset=productos)
     )
-    menus = MenuRestaurante.objects.prefetch_related("productos")
+    menus = MenuRestaurante.objects.prefetch_related(
+        Prefetch("categorias", queryset=categorias),
+        "productos",
+    )
     return render(request, "menu/crear_menu.html", {
-        "categorias": categorias,
         "menus": menus,
     })
 
@@ -883,8 +885,7 @@ def menu_cliente_detalle(request, menu_id):
     menu_restaurante = get_object_or_404(MenuRestaurante, id=menu_id, activo=True)
     productos = Producto.objects.filter(menu=menu_restaurante).order_by("nombre")
     categorias = (
-        Categoria.objects.filter(productos__menu=menu_restaurante)
-        .distinct()
+        Categoria.objects.filter(menu=menu_restaurante)
         .prefetch_related(Prefetch("productos", queryset=productos))
     )
     return render(request, "menu/menu_cliente.html", {

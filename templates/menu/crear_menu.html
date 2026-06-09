@@ -3,7 +3,7 @@
 {% block title %}Administrar menu{% endblock %}
 
 {% block page %}
-{% include "components/page_hero.html" with compact=True eyebrow="Administracion" title="Administrar menu" subtitle="Gestiona categorias, productos, mesas y ventas desde una interfaz central." %}
+{% include "components/page_hero.html" with compact=True eyebrow="Administracion" title="Administrar menu" subtitle="Gestiona menus, categorias, productos, mesas y ventas desde una interfaz central." %}
 
 <main class="page-shell">
     <div class="toolbar">
@@ -21,77 +21,74 @@
         </div>
     </div>
 
-    <section class="section-block">
-        <div class="section-heading">
-            <h3>Menus disponibles</h3>
-            <p>El cliente elige uno de estos menus antes de ver la carta.</p>
-        </div>
-        <div class="product-grid">
-            {% for menu in menus %}
-                <article class="product-card">
-                    <div class="product-card__body">
-                        <div class="product-card__title-row">
-                            <h4>{{ menu.nombre }}</h4>
-                            <span class="price">{{ menu.productos.all|length }} productos</span>
-                        </div>
-                        {% if menu.descripcion %}
-                            <small>{{ menu.descripcion }}</small>
-                        {% endif %}
-                        <small>{% if menu.activo %}Visible para clientes{% else %}Oculto para clientes{% endif %}</small>
+    <div class="admin-menu-grid">
+        {% for menu in menus %}
+            <section class="admin-menu-card">
+                <div class="admin-menu-card__header">
+                    <div>
+                        <h3>{{ menu.nombre }}</h3>
+                        <p>{{ menu.categorias.all|length }} categorias · {{ menu.productos.all|length }} productos</p>
                     </div>
-                </article>
-            {% empty %}
-                <p class="empty-state">No hay menus creados.</p>
-            {% endfor %}
-        </div>
-    </section>
-
-    {% for categoria in categorias %}
-        <section class="section-block">
-            <div class="section-heading">
-                <h3>{{ categoria.nombre }}</h3>
-                <div class="button-row">
-                    <a href="{% url 'editar_categoria' categoria.id %}" class="btn btn-ghost">Editar</a>
-                    <a href="{% url 'eliminar_categoria' categoria.id %}" class="btn btn-danger"
-                       data-confirm-title="Eliminar categoría"
-                       data-confirm-message="¿Seguro que quieres eliminar la categoría {{ categoria.nombre }}? Esto también eliminará todos los productos asociados."
-                       data-confirm-text="Eliminar"
-                       data-confirm-method="POST">Eliminar</a>
+                    <span class="admin-menu-card__status">
+                        {% if menu.activo %}Visible{% else %}Oculto{% endif %}
+                    </span>
                 </div>
-            </div>
 
-            <div class="product-grid">
-                {% for producto in categoria.productos.all %}
-                    <article class="product-card">
-                        {% if producto.imagen %}
-                            <img src="{{ producto.imagen.url }}" alt="{{ producto.nombre }}" class="product-card__image">
-                        {% else %}
-                            <div class="product-card__image product-card__image--empty">{{ producto.nombre }}</div>
-                        {% endif %}
-                        <div class="product-card__body">
-                            <div class="product-card__title-row">
-                                <h4>{{ producto.nombre }}</h4>
-                                <span class="price">${{ producto.precio }}</span>
+                <div class="admin-category-list">
+                    {% for categoria in menu.categorias.all %}
+                        <article class="admin-category-card">
+                            <div class="admin-category-card__header">
+                                <div>
+                                    <h4>{{ categoria.nombre }}</h4>
+                                    <span>{{ categoria.productos.all|length }} productos</span>
+                                </div>
+                                <div class="button-row">
+                                    <a href="{% url 'editar_categoria' categoria.id %}" class="btn btn-ghost">Editar</a>
+                                    <a href="{% url 'eliminar_categoria' categoria.id %}" class="btn btn-danger"
+                                       data-confirm-title="Eliminar categoria"
+                                       data-confirm-message="Seguro que quieres eliminar la categoria {{ categoria.nombre }}? Esto tambien eliminara todos los productos asociados."
+                                       data-confirm-text="Eliminar"
+                                       data-confirm-method="POST">Eliminar</a>
+                                </div>
                             </div>
-                            <small>Menu: {{ producto.menu.nombre }}</small>
-                            <small>{{ producto.descripcion }}</small>
-                            <div class="button-row">
-                                <a href="{% url 'editar_producto' producto.id %}" class="btn btn-ghost">Editar</a>
-                                <a href="{% url 'eliminar_producto' producto.id %}" class="btn btn-danger"
-                                   data-confirm-title="Eliminar producto"
-                                   data-confirm-message="¿Seguro que quieres eliminar el producto {{ producto.nombre }}?"
-                                   data-confirm-text="Eliminar"
-                                   data-confirm-method="POST">Eliminar</a>
+
+                            <div class="admin-product-list">
+                                {% for producto in categoria.productos.all %}
+                                    <article class="admin-product-row">
+                                        {% if producto.imagen %}
+                                            <img src="{{ producto.imagen.url }}" alt="{{ producto.nombre }}" class="admin-product-row__image">
+                                        {% else %}
+                                            <div class="admin-product-row__image admin-product-row__image--empty">{{ producto.nombre|slice:":1" }}</div>
+                                        {% endif %}
+                                        <div class="admin-product-row__body">
+                                            <h5>{{ producto.nombre }}</h5>
+                                            {% if producto.descripcion %}
+                                                <p>{{ producto.descripcion }}</p>
+                                            {% endif %}
+                                        </div>
+                                        <strong>${{ producto.precio }}</strong>
+                                        <div class="button-row">
+                                            <a href="{% url 'editar_producto' producto.id %}" class="btn btn-ghost">Editar</a>
+                                            <a href="{% url 'eliminar_producto' producto.id %}" class="btn btn-danger"
+                                               data-confirm-title="Eliminar producto"
+                                               data-confirm-message="Seguro que quieres eliminar el producto {{ producto.nombre }}?"
+                                               data-confirm-text="Eliminar"
+                                               data-confirm-method="POST">Eliminar</a>
+                                        </div>
+                                    </article>
+                                {% empty %}
+                                    <p class="empty-state">No hay productos en esta categoria.</p>
+                                {% endfor %}
                             </div>
-                        </div>
-                    </article>
-                {% empty %}
-                    <p class="empty-state">No hay productos en esta categoria.</p>
-                {% endfor %}
-            </div>
-        </section>
-    {% empty %}
-        <p class="empty-state">No hay categorias creadas.</p>
-    {% endfor %}
+                        </article>
+                    {% empty %}
+                        <p class="empty-state">No hay categorias en este menu.</p>
+                    {% endfor %}
+                </div>
+            </section>
+        {% empty %}
+            <p class="empty-state">No hay menus creados.</p>
+        {% endfor %}
+    </div>
 </main>
 {% endblock %}

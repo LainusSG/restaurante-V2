@@ -29,6 +29,16 @@ class MesaForm(forms.ModelForm):
         return nombre
 
 class CategoriaForm(forms.ModelForm):
+    menu = forms.ModelChoiceField(
+        queryset=MenuRestaurante.objects.filter(activo=True),
+        label="Menu",
+        widget=forms.Select(attrs={
+            "class": "form-input",
+            "required": "required",
+        }),
+        help_text="Selecciona a que menu pertenece esta categoria"
+    )
+
     nombre = forms.CharField(
         label="Nombre de la categoría",
         max_length=100,
@@ -42,7 +52,16 @@ class CategoriaForm(forms.ModelForm):
     
     class Meta:
         model = Categoria
-        fields = ["nombre"]
+        fields = ["menu", "nombre"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["menu"].queryset = MenuRestaurante.objects.filter(activo=True)
+        if self.instance and self.instance.pk and self.instance.menu_id:
+            self.fields["menu"].queryset = (
+                MenuRestaurante.objects.filter(activo=True)
+                | MenuRestaurante.objects.filter(pk=self.instance.menu_id)
+            )
     
     def clean_nombre(self):
         nombre = self.cleaned_data.get('nombre', '').strip()
@@ -50,9 +69,20 @@ class CategoriaForm(forms.ModelForm):
             raise ValidationError("El nombre de la categoría no puede estar vacío")
         if len(nombre) < 2:
             raise ValidationError("El nombre debe tener al menos 2 caracteres")
-        if Categoria.objects.filter(nombre__iexact=nombre).exclude(pk=self.instance.pk).exists():
-            raise ValidationError("Ya existe una categoría con este nombre")
         return nombre
+
+    def clean(self):
+        cleaned_data = super().clean()
+        menu = cleaned_data.get("menu")
+        nombre = cleaned_data.get("nombre")
+        if menu and nombre:
+            existe = Categoria.objects.filter(
+                menu=menu,
+                nombre__iexact=nombre,
+            ).exclude(pk=self.instance.pk).exists()
+            if existe:
+                self.add_error("nombre", "Ya existe una categoria con este nombre en este menu")
+        return cleaned_data
 
 class MenuRestauranteForm(forms.ModelForm):
     nombre = forms.CharField(
@@ -90,7 +120,7 @@ class ProductoForm(forms.ModelForm):
     )
 
     categoria = forms.ModelChoiceField(
-        queryset=Categoria.objects.all(),
+        queryset=Categoria.objects.select_related("menu").all(),
         label="Categoría",
         widget=forms.Select(attrs={
             "class": "form-input",
@@ -202,6 +232,7 @@ class ProductoForm(forms.ModelForm):
                 MenuRestaurante.objects.filter(activo=True)
                 | MenuRestaurante.objects.filter(pk=self.instance.menu_id)
             )
+        self.fields["categoria"].queryset = Categoria.objects.select_related("menu").all()
         self.fields["producto_almacen"].queryset = ProductoAlmacen.objects.filter(
             activo=True
         ).select_related("proveedor")
@@ -233,9 +264,14 @@ class ProductoForm(forms.ModelForm):
 
     def clean(self):
         cleaned_data = super().clean()
+        menu = cleaned_data.get("menu")
+        categoria = cleaned_data.get("categoria")
         enlazar = cleaned_data.get("enlazar_inventario")
         producto_almacen = cleaned_data.get("producto_almacen")
         cantidad_descontar = cleaned_data.get("cantidad_descontar")
+
+        if menu and categoria and categoria.menu_id != menu.id:
+            self.add_error("categoria", "La categoria seleccionada no pertenece a este menu")
 
         if enlazar and not producto_almacen:
             self.add_error("producto_almacen", "Selecciona un producto de almacen")

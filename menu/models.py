@@ -17,10 +17,15 @@ class MenuRestaurante(models.Model):
 
 
 class Categoria(models.Model):
+    menu = models.ForeignKey(MenuRestaurante, on_delete=models.PROTECT, related_name="categorias")
     nombre = models.CharField(max_length=100)
 
+    class Meta:
+        ordering = ["menu__orden", "menu__nombre", "nombre"]
+        unique_together = ["menu", "nombre"]
+
     def __str__(self):
-        return self.nombre
+        return f"{self.menu.nombre} - {self.nombre}"
 
 class Producto(models.Model):
     menu = models.ForeignKey(MenuRestaurante, on_delete=models.PROTECT, related_name="productos")
