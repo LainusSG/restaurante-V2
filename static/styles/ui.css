@@ -1050,7 +1050,6 @@ select.form-input {
     justify-content: center;
     flex-wrap: wrap;
 }
-}
 
 .table-tile--busy::before {
     background: var(--danger);
@@ -1096,6 +1095,10 @@ select.form-input {
 
 .form-field__input-wrapper {
     position: relative;
+}
+
+.form-field__icon {
+    display: none;
 }
 
 .form-field input,
@@ -1890,5 +1893,195 @@ select.form-input {
     .ticket {
         margin: 0;
         padding: 0;
+    }
+}
+
+/* =====================
+   Ajustes responsive de formularios
+   ===================== */
+
+.center-page {
+    background:
+        radial-gradient(circle at top left, rgba(227, 74, 47, 0.08), transparent 34rem),
+        var(--bg);
+}
+
+.form-card.modern-form {
+    width: min(760px, calc(100% - 32px));
+    border-color: var(--line);
+    background: var(--surface-strong);
+    box-shadow: var(--shadow);
+}
+
+.form-card.modern-form .form-card__header {
+    background: #2b211b;
+}
+
+.form-card.modern-form .form-card__header::before {
+    border-radius: var(--radius);
+    background-color: var(--accent);
+}
+
+.form-card.modern-form .form-card__header p {
+    color: rgba(255, 255, 255, 0.72);
+}
+
+.form-card.modern-form .app-form {
+    background: var(--surface);
+}
+
+.modern-form .form-field[data-field] {
+    grid-column: 1 / -1;
+}
+
+.modern-form .form-field[data-field="telefono"],
+.modern-form .form-field[data-field="email"],
+.modern-form .form-field[data-field="unidad"],
+.modern-form .form-field[data-field="existencia"],
+.modern-form .form-field[data-field="minimo"],
+.modern-form .form-field[data-field="maximo"],
+.modern-form .form-field[data-field="cantidad"],
+.modern-form .form-field[data-field="referencia"],
+.modern-form .form-field[data-field="monto"],
+.modern-form .form-field[data-field="metodo_pago"] {
+    grid-column: 1 / -1;
+}
+
+.modern-form .form-field[data-field="telefono"]:has(+ .form-field[data-field="email"]),
+.modern-form .form-field[data-field="email"],
+.modern-form .form-field[data-field="unidad"]:has(+ .form-field[data-field="existencia"]),
+.modern-form .form-field[data-field="existencia"]:has(+ .form-field[data-field="minimo"]),
+.modern-form .form-field[data-field="minimo"]:has(+ .form-field[data-field="maximo"]),
+.modern-form .form-field[data-field="maximo"],
+.modern-form .form-field[data-field="cantidad"]:has(+ .form-field[data-field="referencia"]),
+.modern-form .form-field[data-field="referencia"],
+.modern-form .form-field[data-field="monto"]:has(+ .form-field[data-field="metodo_pago"]),
+.modern-form .form-field[data-field="metodo_pago"] {
+    grid-column: span 1;
+}
+
+.modern-form .form-field__label {
+    color: var(--muted);
+}
+
+.modern-form .form-field__required,
+.modern-form .form-field__status-icon,
+.modern-form .form-field__input-wrapper:focus-within .form-field__icon {
+    color: var(--accent);
+}
+
+.modern-form .form-input,
+.modern-form .form-field input:not([type="checkbox"]),
+.modern-form .form-field select,
+.modern-form .form-field textarea,
+.searchable-select__input,
+.modern-form .form-field__switch-row {
+    border-color: var(--line);
+    background: #fffaf7;
+    color: var(--ink);
+}
+
+.modern-form .form-field input:not([type="checkbox"]):focus,
+.modern-form .form-field select:focus,
+.modern-form .form-field textarea:focus,
+.searchable-select__input:focus {
+    border-color: var(--accent);
+    background: #fffaf7;
+    box-shadow: 0 0 0 4px rgba(227, 74, 47, 0.12);
+}
+
+.searchable-select__list {
+    border-color: var(--line);
+    background: var(--surface-strong);
+    box-shadow: var(--shadow);
+}
+
+.searchable-select__option {
+    color: var(--ink);
+}
+
+.searchable-select__option:hover,
+.searchable-select__option:focus,
+.searchable-select__option[aria-selected="true"] {
+    background: var(--accent-soft);
+    color: var(--accent-dark);
+}
+
+.modern-form .form-actions button[type="submit"] {
+    border-radius: var(--radius);
+    background: var(--accent);
+    box-shadow: 0 12px 24px rgba(227, 74, 47, 0.22);
+}
+
+.modern-form .form-actions button[type="submit"]:hover {
+    background: var(--accent-dark);
+}
+
+@media (min-width: 641px) and (max-width: 1024px) {
+    .page-shell {
+        width: min(100% - 40px, 960px);
+        padding: 24px 0 48px;
+    }
+
+    .form-card.modern-form {
+        width: min(720px, calc(100% - 40px));
+    }
+
+    .form-card.modern-form .form-card__header,
+    .form-card.modern-form .app-form {
+        padding: 28px;
+    }
+
+    .table-grid--service,
+    .product-grid {
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    }
+}
+
+@media (max-width: 640px) {
+    .page-hero {
+        min-height: 240px;
+    }
+
+    .page-hero--compact {
+        min-height: 150px;
+    }
+
+    .page-hero__content {
+        width: calc(100% - 24px);
+    }
+
+    .page-hero h1 {
+        font-size: 2rem;
+    }
+
+    .form-card.modern-form {
+        width: min(100% - 20px, 672px);
+        border-radius: 16px;
+    }
+
+    .form-card.modern-form .form-card__header {
+        gap: 12px;
+        padding: 20px;
+    }
+
+    .form-card.modern-form .form-card__header::before {
+        width: 44px;
+        height: 44px;
+    }
+
+    .form-card.modern-form .app-form {
+        gap: 18px;
+        padding: 20px;
+    }
+
+    .modern-form .form-field[data-field],
+    .modern-form .form-actions {
+        grid-column: 1 / -1;
+    }
+
+    .modern-form .form-actions .btn,
+    .modern-form .form-actions button[type="submit"] {
+        width: 100%;
     }
 }

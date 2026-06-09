@@ -135,7 +135,7 @@
             contenedor.classList.add("is-open");
             input.setAttribute("aria-expanded", "true");
             input.select();
-            renderizarOpciones(select, contenedor, input.value);
+            renderizarOpciones(select, contenedor, "");
         });
 
         input.addEventListener("input", () => {
