@@ -1402,6 +1402,303 @@ select.form-input {
     font-size: 1.25rem;
 }
 
+/* =====================
+   Formularios estilo panel moderno
+   ===================== */
+
+.center-page {
+    background: #fafafa;
+}
+
+.form-card.modern-form {
+    width: min(672px, calc(100% - 32px));
+    padding: 0;
+    overflow: hidden;
+    border: 1px solid #f4f4f5;
+    border-radius: 24px;
+    background: #fff;
+    box-shadow: 0 20px 45px rgba(212, 212, 216, 0.5);
+}
+
+.form-card.modern-form .form-card__header {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    margin: 0;
+    padding: 32px;
+    background: #18181b;
+    color: #fff;
+    text-align: left;
+}
+
+.form-card.modern-form .form-card__header::before {
+    content: "";
+    flex: 0 0 auto;
+    width: 52px;
+    height: 52px;
+    border-radius: 16px;
+    background-color: #f97316;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 21h18'/%3E%3Cpath d='M5 21V7l8-4 6 4v14'/%3E%3Cpath d='M9 21v-8h6v8'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+.form-card.modern-form .form-card__header h1 {
+    margin: 0 0 4px;
+    color: #fff;
+    font-size: 1.55rem;
+    font-weight: 800;
+    line-height: 1.1;
+    text-align: left;
+    background: none;
+    -webkit-text-fill-color: currentColor;
+}
+
+.form-card.modern-form .form-card__header p {
+    margin: 0;
+    color: #a1a1aa;
+    font-size: 0.9rem;
+}
+
+.form-card.modern-form .app-form {
+    gap: 24px;
+    padding: 32px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.modern-form .form-field {
+    display: grid;
+    gap: 8px;
+    grid-column: 1 / -1;
+}
+
+.modern-form .form-field[data-field="telefono"],
+.modern-form .form-field[data-field="email"],
+.modern-form .form-field[data-field="unidad"],
+.modern-form .form-field[data-field="existencia"],
+.modern-form .form-field[data-field="minimo"],
+.modern-form .form-field[data-field="maximo"],
+.modern-form .form-field[data-field="cantidad"],
+.modern-form .form-field[data-field="monto"],
+.modern-form .form-field[data-field="metodo_pago"] {
+    grid-column: span 1;
+}
+
+.modern-form .form-field__header {
+    margin: 0;
+}
+
+.modern-form .form-field__label {
+    color: #71717a;
+    font-size: 0.74rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.modern-form .form-field__required {
+    color: #f97316;
+}
+
+.modern-form .form-field__help {
+    max-width: 280px;
+    color: #a1a1aa;
+    font-size: 0.76rem;
+}
+
+.modern-form .form-field__input-wrapper {
+    position: relative;
+}
+
+.modern-form .form-field__icon {
+    position: absolute;
+    z-index: 1;
+    left: 16px;
+    top: 14px;
+    display: grid;
+    width: 20px;
+    height: 20px;
+    place-items: center;
+    color: #a1a1aa;
+    pointer-events: none;
+    transition: color 0.2s ease;
+}
+
+.modern-form .form-field__icon svg,
+.modern-form .form-field__status-icon svg {
+    width: 100%;
+    height: 100%;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 2;
+}
+
+.modern-form .form-field__input-wrapper:focus-within .form-field__icon {
+    color: #f97316;
+}
+
+.modern-form .form-input,
+.modern-form .form-field input:not([type="checkbox"]),
+.modern-form .form-field select,
+.modern-form .form-field textarea {
+    min-height: 48px;
+    padding: 12px 14px 12px 48px;
+    border: 1px solid #e4e4e7;
+    border-radius: 12px;
+    background: #fafafa;
+    color: #27272a;
+    box-shadow: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.modern-form .form-field textarea {
+    min-height: 80px;
+    resize: none;
+}
+
+.modern-form .form-field input:not([type="checkbox"]):focus,
+.modern-form .form-field select:focus,
+.modern-form .form-field textarea:focus {
+    border-color: #f97316;
+    background: #fafafa;
+    box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.1);
+}
+
+.modern-form select.form-input {
+    background-position: right 14px center;
+    padding-right: 38px;
+}
+
+.modern-form input[type="file"].form-input {
+    padding-left: 48px;
+    line-height: 1.3;
+}
+
+.modern-form .form-field__switch-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    padding: 16px;
+    border: 1px solid #e4e4e7;
+    border-radius: 16px;
+    background: #fafafa;
+}
+
+.modern-form .form-field__switch-copy {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.modern-form .form-field__status-icon {
+    display: grid;
+    width: 24px;
+    height: 24px;
+    place-items: center;
+    color: #f97316;
+}
+
+.modern-form .form-switch {
+    position: relative;
+    display: inline-flex;
+    width: 44px;
+    height: 24px;
+    flex: 0 0 auto;
+    align-items: center;
+    cursor: pointer;
+}
+
+.modern-form .form-switch input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+}
+
+.modern-form .form-switch__track {
+    position: absolute;
+    inset: 0;
+    border-radius: 999px;
+    background: #e4e4e7;
+    transition: background 0.2s ease;
+}
+
+.modern-form .form-switch__track::after {
+    content: "";
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 20px;
+    height: 20px;
+    border: 1px solid #d4d4d8;
+    border-radius: 50%;
+    background: #fff;
+    transition: transform 0.2s ease;
+}
+
+.modern-form .form-switch input:checked + .form-switch__track {
+    background: #f97316;
+}
+
+.modern-form .form-switch input:checked + .form-switch__track::after {
+    transform: translateX(20px);
+    border-color: #fff;
+}
+
+.modern-form .form-actions {
+    display: flex;
+    gap: 16px;
+    grid-column: 1 / -1;
+    margin-top: 0;
+    padding-top: 24px;
+    border-top: 0;
+}
+
+.modern-form .form-actions button[type="submit"] {
+    order: 2;
+    flex: 1;
+    min-height: 50px;
+    border-radius: 12px;
+    background: #f97316;
+    box-shadow: 0 12px 24px rgba(249, 115, 22, 0.3);
+    color: #fff;
+}
+
+.modern-form .form-actions button[type="submit"]::after {
+    content: "";
+    width: 18px;
+    height: 18px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m9 18 6-6-6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+.modern-form .form-actions button[type="submit"]:hover {
+    background: #ea580c;
+    transform: scale(1.02);
+}
+
+.modern-form .form-actions .btn-secondary {
+    order: 1;
+    flex: 1;
+    min-height: 50px;
+    border-color: transparent;
+    background: transparent;
+    color: #52525b;
+    box-shadow: none;
+}
+
+.modern-form .form-actions .btn-secondary:hover {
+    background: transparent;
+    color: #18181b;
+    transform: none;
+}
+
 @media (max-width: 860px) {
     .inventory-filter {
         grid-template-columns: 1fr;
@@ -1456,6 +1753,30 @@ select.form-input {
     .order-panel,
     .kitchen-card {
         padding: 16px;
+    }
+
+    .form-card.modern-form {
+        width: min(100% - 20px, 672px);
+        padding: 0;
+    }
+
+    .form-card.modern-form .form-card__header {
+        align-items: flex-start;
+        padding: 24px;
+    }
+
+    .form-card.modern-form .app-form {
+        grid-template-columns: 1fr;
+        padding: 24px;
+    }
+
+    .modern-form .form-field[data-field],
+    .modern-form .form-actions {
+        grid-column: 1 / -1;
+    }
+
+    .modern-form .form-actions {
+        flex-direction: column;
     }
 
     th,
