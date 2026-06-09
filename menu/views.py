@@ -693,6 +693,26 @@ def crear_producto(request):
 
 
 @admin_required
+def obtener_categorias_por_menu(request, menu_id):
+    """
+    Devuelve las categorías de un menú específico en formato JSON.
+    Se utiliza para filtrar dinámicamente el campo de categoría en el formulario de crear producto.
+    """
+    try:
+        menu = MenuRestaurante.objects.get(id=menu_id, activo=True)
+        categorias = Categoria.objects.filter(menu=menu).values("id", "nombre")
+        return JsonResponse({
+            "success": True,
+            "categorias": list(categorias)
+        })
+    except MenuRestaurante.DoesNotExist:
+        return JsonResponse({
+            "success": False,
+            "error": "Menú no encontrado"
+        }, status=404)
+
+
+@admin_required
 def crear_menu_restaurante(request):
     if request.method == "POST":
         form = MenuRestauranteForm(request.POST)

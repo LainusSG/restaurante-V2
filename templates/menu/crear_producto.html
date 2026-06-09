@@ -56,5 +56,65 @@ function actualizarCamposInventario() {
 
 enlaceInventario.addEventListener("change", actualizarCamposInventario);
 actualizarCamposInventario();
+
+// Filtro dinámico de categorías por menú
+const menuSelect = document.getElementById("id_menu");
+const categoriaSelect = document.getElementById("id_categoria");
+const categoriaActualId = categoriaSelect.value; // Guardar la categoría preseleccionada si existe
+
+function cargarCategorias() {
+    const menuId = menuSelect.value;
+    
+    if (!menuId) {
+        categoriaSelect.innerHTML = '<option value="">-- Selecciona una categoría --</option>';
+        categoriaSelect.disabled = true;
+        return;
+    }
+    
+    // Hacer llamada AJAX para obtener categorías
+    fetch(`/menu/api/categorias/${menuId}/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const categoriaAnterior = categoriaSelect.value;
+                
+                // Limpiar opciones existentes
+                categoriaSelect.innerHTML = '<option value="">-- Selecciona una categoría --</option>';
+                
+                // Agregar nuevas categorías
+                data.categorias.forEach(categoria => {
+                    const option = document.createElement('option');
+                    option.value = categoria.id;
+                    option.textContent = categoria.nombre;
+                    categoriaSelect.appendChild(option);
+                });
+                
+                // Restaurar la categoría anterior si sigue siendo válida
+                if (categoriaAnterior && categoriaSelect.querySelector(`option[value="${categoriaAnterior}"]`)) {
+                    categoriaSelect.value = categoriaAnterior;
+                }
+                
+                categoriaSelect.disabled = false;
+            } else {
+                categoriaSelect.innerHTML = '<option value="">Error al cargar categorías</option>';
+                categoriaSelect.disabled = true;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            categoriaSelect.innerHTML = '<option value="">Error al cargar categorías</option>';
+            categoriaSelect.disabled = true;
+        });
+}
+
+// Cargar categorías cuando cambia el menú
+menuSelect.addEventListener("change", cargarCategorias);
+
+// Cargar categorías al cargar la página si hay un menú preseleccionado
+document.addEventListener("DOMContentLoaded", function() {
+    if (menuSelect.value) {
+        cargarCategorias();
+    }
+});
 </script>
 {% endblock %}

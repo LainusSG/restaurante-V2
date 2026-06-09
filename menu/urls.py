@@ -39,6 +39,7 @@ urlpatterns = [
     path("administrador/inventario/ingresar/", views.ingresar_mercancia, name="ingresar_mercancia"),
     path("menu/crear/categoria/", views.crear_categoria, name="crear_categoria"),
     path("menu/crear/producto/", views.crear_producto, name="crear_producto"),
+    path("menu/api/categorias/<int:menu_id>/", views.obtener_categorias_por_menu, name="obtener_categorias_por_menu"),
     path("categoria/editar/<int:categoria_id>/", views.editar_categoria, name="editar_categoria"),
     path("categoria/eliminar/<int:categoria_id>/", views.eliminar_categoria, name="eliminar_categoria"),
     path("producto/<int:producto_id>/editar/", views.editar_producto, name="editar_producto"),
