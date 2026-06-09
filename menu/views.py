@@ -13,7 +13,7 @@ from django.contrib.auth.decorators import user_passes_test
 from django.views.decorators.http import require_http_methods
 from django.core.paginator import Paginator
 from django.db import transaction
-from django.db.models import Sum
+from django.db.models import Prefetch, Sum
 from django.db.models.functions import TruncDay, TruncMonth, TruncYear
 
 from .models import (
@@ -21,6 +21,7 @@ from .models import (
     Categoria,
     Cliente,
     IngresoMercancia,
+    MenuRestaurante,
     Producto,
     ProductoAlmacen,
     Pedido,
@@ -37,6 +38,7 @@ from .forms import (
     CerrarVentaForm,
     ClienteForm,
     IngresoMercanciaForm,
+    MenuRestauranteForm,
     ProductoAlmacenForm,
     ProductoForm,
     MesaForm,
@@ -691,9 +693,32 @@ def crear_producto(request):
 
 
 @admin_required
+def crear_menu_restaurante(request):
+    if request.method == "POST":
+        form = MenuRestauranteForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Menu creado correctamente")
+            return redirect("crear_menu")
+    else:
+        form = MenuRestauranteForm()
+    return render(request, "menu/menu_restaurante_form.html", {
+        "form": form,
+        "titulo": "Crear menu",
+    })
+
+
+@admin_required
 def crear_menu(request):
-    categorias = Categoria.objects.all().prefetch_related("productos")
-    return render(request, "menu/crear_menu.html", {"categorias": categorias})
+    productos = Producto.objects.select_related("menu").order_by("menu__orden", "menu__nombre", "nombre")
+    categorias = Categoria.objects.all().prefetch_related(
+        Prefetch("productos", queryset=productos)
+    )
+    menus = MenuRestaurante.objects.prefetch_related("productos")
+    return render(request, "menu/crear_menu.html", {
+        "categorias": categorias,
+        "menus": menus,
+    })
 
 
 @admin_required
@@ -848,8 +873,22 @@ def borrar_mesa(request, mesa_id):
 
 
 def Menu_cliente(request):
-    categorias = Categoria.objects.prefetch_related("productos").all()
+    menus = MenuRestaurante.objects.filter(activo=True).order_by("orden", "nombre")
+    if menus.count() == 1:
+        return redirect("menu_cliente_detalle", menu_id=menus.first().id)
+    return render(request, "menu/seleccionar_menu_cliente.html", {"menus": menus})
+
+
+def menu_cliente_detalle(request, menu_id):
+    menu_restaurante = get_object_or_404(MenuRestaurante, id=menu_id, activo=True)
+    productos = Producto.objects.filter(menu=menu_restaurante).order_by("nombre")
+    categorias = (
+        Categoria.objects.filter(productos__menu=menu_restaurante)
+        .distinct()
+        .prefetch_related(Prefetch("productos", queryset=productos))
+    )
     return render(request, "menu/menu_cliente.html", {
-        "categorias": categorias
+        "categorias": categorias,
+        "menu_restaurante": menu_restaurante,
     })
 

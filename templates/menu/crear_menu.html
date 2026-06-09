@@ -11,6 +11,7 @@
             <h2>Catalogo</h2>
         </div>
         <div class="button-row">
+            <a href="{% url 'crear_menu_restaurante' %}" class="btn">Crear menu</a>
             <a href="{% url 'crear_categoria' %}" class="btn">Crear categoria</a>
             <a href="{% url 'crear_producto' %}" class="btn">Crear producto</a>
             <a href="{% url 'inventario' %}" class="btn btn-secondary">Inventario</a>
@@ -19,6 +20,31 @@
             <a href="{% url 'dashboard' %}" class="btn btn-secondary">Dashboard</a>
         </div>
     </div>
+
+    <section class="section-block">
+        <div class="section-heading">
+            <h3>Menus disponibles</h3>
+            <p>El cliente elige uno de estos menus antes de ver la carta.</p>
+        </div>
+        <div class="product-grid">
+            {% for menu in menus %}
+                <article class="product-card">
+                    <div class="product-card__body">
+                        <div class="product-card__title-row">
+                            <h4>{{ menu.nombre }}</h4>
+                            <span class="price">{{ menu.productos.all|length }} productos</span>
+                        </div>
+                        {% if menu.descripcion %}
+                            <small>{{ menu.descripcion }}</small>
+                        {% endif %}
+                        <small>{% if menu.activo %}Visible para clientes{% else %}Oculto para clientes{% endif %}</small>
+                    </div>
+                </article>
+            {% empty %}
+                <p class="empty-state">No hay menus creados.</p>
+            {% endfor %}
+        </div>
+    </section>
 
     {% for categoria in categorias %}
         <section class="section-block">
@@ -47,6 +73,7 @@
                                 <h4>{{ producto.nombre }}</h4>
                                 <span class="price">${{ producto.precio }}</span>
                             </div>
+                            <small>Menu: {{ producto.menu.nombre }}</small>
                             <small>{{ producto.descripcion }}</small>
                             <div class="button-row">
                                 <a href="{% url 'editar_producto' producto.id %}" class="btn btn-ghost">Editar</a>

@@ -1,8 +1,9 @@
 from django.contrib import admin
-from .models import CajaMovimiento, Cliente, IngresoMercancia, Pedido, ProductoAlmacen, Proveedor, Venta
+from .models import CajaMovimiento, Cliente, IngresoMercancia, MenuRestaurante, Pedido, ProductoAlmacen, Proveedor, Venta
 # Register your models here.
 
 admin.site.register(Pedido)
+admin.site.register(MenuRestaurante)
 admin.site.register(Proveedor)
 admin.site.register(ProductoAlmacen)
 admin.site.register(IngresoMercancia)

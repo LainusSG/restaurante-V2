@@ -3,6 +3,19 @@ from django.db.models import Sum
 from django.utils.timezone import now
 
 
+class MenuRestaurante(models.Model):
+    nombre = models.CharField(max_length=100, unique=True)
+    descripcion = models.TextField(blank=True)
+    activo = models.BooleanField(default=True)
+    orden = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ["orden", "nombre"]
+
+    def __str__(self):
+        return self.nombre
+
+
 class Categoria(models.Model):
     nombre = models.CharField(max_length=100)
 
@@ -10,6 +23,7 @@ class Categoria(models.Model):
         return self.nombre
 
 class Producto(models.Model):
+    menu = models.ForeignKey(MenuRestaurante, on_delete=models.PROTECT, related_name="productos")
     categoria = models.ForeignKey(Categoria, on_delete=models.CASCADE, related_name="productos")
     nombre = models.CharField(max_length=100)
     descripcion = models.TextField(blank=True)

@@ -1,6 +1,6 @@
 from django import forms
 from django.core.exceptions import ValidationError
-from .models import Categoria, Cliente, IngresoMercancia, Producto, ProductoAlmacen, Proveedor, Mesa, Venta
+from .models import Categoria, Cliente, IngresoMercancia, MenuRestaurante, Producto, ProductoAlmacen, Proveedor, Mesa, Venta
 
 class MesaForm(forms.ModelForm):
     nombre = forms.CharField(
@@ -54,6 +54,31 @@ class CategoriaForm(forms.ModelForm):
             raise ValidationError("Ya existe una categoría con este nombre")
         return nombre
 
+class MenuRestauranteForm(forms.ModelForm):
+    nombre = forms.CharField(
+        label="Nombre del menu",
+        max_length=100,
+        widget=forms.TextInput(attrs={
+            "class": "form-input",
+            "placeholder": "Ej: Desayunos, Comida, Bebidas",
+            "required": "required",
+        }),
+        help_text="Nombre visible para identificar esta carta"
+    )
+
+    class Meta:
+        model = MenuRestaurante
+        fields = ["nombre"]
+
+    def clean_nombre(self):
+        nombre = self.cleaned_data.get("nombre", "").strip()
+        if not nombre:
+            raise ValidationError("El nombre del menu no puede estar vacio")
+        if MenuRestaurante.objects.filter(nombre__iexact=nombre).exclude(pk=self.instance.pk).exists():
+            raise ValidationError("Ya existe un menu con este nombre")
+        return nombre
+
+
 class ProductoForm(forms.ModelForm):
     enlazar_inventario = forms.BooleanField(
         label="Enlazar a algun producto de almacen",
@@ -74,6 +99,16 @@ class ProductoForm(forms.ModelForm):
         help_text="Selecciona la categoría a la que pertenece este producto"
     )
     
+    menu = forms.ModelChoiceField(
+        queryset=MenuRestaurante.objects.filter(activo=True),
+        label="Menu",
+        widget=forms.Select(attrs={
+            "class": "form-input",
+            "required": "required",
+        }),
+        help_text="Selecciona en que carta aparecera este producto"
+    )
+
     nombre = forms.CharField(
         label="Nombre del producto",
         max_length=100,
@@ -148,6 +183,7 @@ class ProductoForm(forms.ModelForm):
     class Meta:
         model = Producto
         fields = [
+            "menu",
             "categoria",
             "nombre",
             "descripcion",
@@ -160,6 +196,12 @@ class ProductoForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields["menu"].queryset = MenuRestaurante.objects.filter(activo=True)
+        if self.instance and self.instance.pk and self.instance.menu_id:
+            self.fields["menu"].queryset = (
+                MenuRestaurante.objects.filter(activo=True)
+                | MenuRestaurante.objects.filter(pk=self.instance.menu_id)
+            )
         self.fields["producto_almacen"].queryset = ProductoAlmacen.objects.filter(
             activo=True
         ).select_related("proveedor")

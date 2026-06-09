@@ -51,7 +51,7 @@ DEBUG = env_bool('DEBUG', True)
 
 ALLOWED_HOSTS = os.getenv(
     "DJANGO_ALLOWED_HOSTS",
-    "localhost,127.0.0.1,213.199.58.201,restaurante-gkt8.onrender.com",
+    "localhost,127.0.0.1,213.199.58.201,restaurante-mi-gusto-es.onrender.com",
 ).split(",")
 
 

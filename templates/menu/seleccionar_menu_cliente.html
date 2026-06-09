@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}Seleccionar menu{% endblock %}
+{% block body_class %}app-page menu-client-page{% endblock %}
+
+{% block page %}
+{% include "components/page_hero.html" with eyebrow="Carta" title="Elige un menu" subtitle="Selecciona la carta que quieres consultar." %}
+
+<main class="page-shell">
+    <section class="section-block">
+        <div class="product-grid">
+            {% for menu in menus %}
+                <a href="{% url 'menu_cliente_detalle' menu.id %}" class="product-card">
+                    <div class="product-card__body">
+                        <div class="product-card__title-row">
+                            <h4>{{ menu.nombre }}</h4>
+                            <span class="price">Ver</span>
+                        </div>
+                        {% if menu.descripcion %}
+                            <small>{{ menu.descripcion }}</small>
+                        {% endif %}
+                    </div>
+                </a>
+            {% empty %}
+                <p class="empty-state">No hay menus disponibles.</p>
+            {% endfor %}
+        </div>
+    </section>
+</main>
+{% endblock %}
