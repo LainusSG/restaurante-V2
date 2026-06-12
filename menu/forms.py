@@ -96,9 +96,39 @@ class MenuRestauranteForm(forms.ModelForm):
         help_text="Nombre visible para identificar esta carta"
     )
 
+    descripcion = forms.CharField(
+        label="Descripción",
+        required=False,
+        widget=forms.Textarea(attrs={
+            "class": "form-input",
+            "placeholder": "Descripción opcional del menú...",
+            "rows": 3,
+        }),
+        help_text="Opcional: información adicional sobre este menú"
+    )
+
+    activo = forms.BooleanField(
+        label="Menú visible",
+        required=False,
+        widget=forms.CheckboxInput(attrs={
+            "class": "form-checkbox",
+        }),
+        help_text="Marca para que este menú sea visible en el sistema"
+    )
+
+    orden = forms.IntegerField(
+        label="Orden de aparición",
+        min_value=0,
+        widget=forms.NumberInput(attrs={
+            "class": "form-input",
+            "placeholder": "Ej: 1, 2, 3...",
+        }),
+        help_text="Número para ordenar cómo aparecen los menús"
+    )
+
     class Meta:
         model = MenuRestaurante
-        fields = ["nombre"]
+        fields = ["nombre", "descripcion", "activo", "orden"]
 
     def clean_nombre(self):
         nombre = self.cleaned_data.get("nombre", "").strip()

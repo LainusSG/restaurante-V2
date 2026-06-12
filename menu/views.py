@@ -729,6 +729,45 @@ def crear_menu_restaurante(request):
 
 
 @admin_required
+def editar_menu_restaurante(request, menu_id):
+    menu = get_object_or_404(MenuRestaurante, id=menu_id)
+    if request.method == "POST":
+        form = MenuRestauranteForm(request.POST, instance=menu)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Menu actualizado correctamente")
+            return redirect("crear_menu")
+    else:
+        form = MenuRestauranteForm(instance=menu)
+    return render(request, "menu/menu_restaurante_form.html", {
+        "form": form,
+        "titulo": "Editar menu",
+        "menu": menu,
+    })
+
+
+@admin_required
+@require_http_methods(["POST"])
+def eliminar_menu_restaurante(request, menu_id):
+    menu = get_object_or_404(MenuRestaurante, id=menu_id)
+    
+    # Verificar si el menú tiene categorías
+    if menu.categorias.exists():
+        messages.error(request, f"No se puede eliminar el menu '{menu.nombre}' porque tiene categorías asociadas. Elimina primero todas sus categorías.")
+        return redirect("crear_menu")
+    
+    # Verificar si el menú tiene productos
+    if menu.productos.exists():
+        messages.error(request, f"No se puede eliminar el menu '{menu.nombre}' porque tiene productos asociados. Elimina primero todos sus productos.")
+        return redirect("crear_menu")
+    
+    nombre_menu = menu.nombre
+    menu.delete()
+    messages.success(request, f"Menu '{nombre_menu}' eliminado correctamente")
+    return redirect("crear_menu")
+
+
+@admin_required
 def crear_menu(request):
     productos = Producto.objects.select_related("categoria").order_by("nombre")
     categorias = Categoria.objects.prefetch_related(

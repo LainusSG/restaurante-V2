@@ -29,9 +29,19 @@
                         <h3>{{ menu.nombre }}</h3>
                         <p>{{ menu.categorias.all|length }} categorias · {{ menu.productos.all|length }} productos</p>
                     </div>
-                    <span class="admin-menu-card__status">
-                        {% if menu.activo %}Visible{% else %}Oculto{% endif %}
-                    </span>
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <span class="admin-menu-card__status">
+                            {% if menu.activo %}Visible{% else %}Oculto{% endif %}
+                        </span>
+                        <div class="button-row">
+                            <a href="{% url 'editar_menu_restaurante' menu.id %}" class="btn btn-ghost">Editar</a>
+                            <a href="{% url 'eliminar_menu_restaurante' menu.id %}" class="btn btn-danger"
+                               data-confirm-title="Eliminar menu"
+                               data-confirm-message="Seguro que quieres eliminar el menu {{ menu.nombre }}? Esto tambien eliminara todas las categorias y productos asociados."
+                               data-confirm-text="Eliminar"
+                               data-confirm-method="POST">Eliminar</a>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="admin-category-list">

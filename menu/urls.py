@@ -33,6 +33,8 @@ urlpatterns = [
     # CRUD Menú
     path("administrador", views.crear_menu, name="crear_menu"),
     path("administrador/menus/crear/", views.crear_menu_restaurante, name="crear_menu_restaurante"),
+    path("administrador/menus/<int:menu_id>/editar/", views.editar_menu_restaurante, name="editar_menu_restaurante"),
+    path("administrador/menus/<int:menu_id>/eliminar/", views.eliminar_menu_restaurante, name="eliminar_menu_restaurante"),
     path("administrador/inventario/", views.inventario, name="inventario"),
     path("administrador/proveedores/crear/", views.crear_proveedor, name="crear_proveedor"),
     path("administrador/inventario/productos/crear/", views.crear_producto_almacen, name="crear_producto_almacen"),
