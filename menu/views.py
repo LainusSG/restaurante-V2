@@ -809,10 +809,64 @@ def crear_proveedor(request):
         if form.is_valid():
             form.save()
             messages.success(request, "Proveedor creado correctamente")
-            return redirect("inventario")
+            return redirect("listar_proveedores")
     else:
         form = ProveedorForm()
-    return render(request, "menu/crear_proveedor.html", {"form": form})
+    return render(request, "menu/proveedor_form.html", {
+        "form": form,
+        "titulo": "Crear proveedor"
+    })
+
+
+@admin_required
+def listar_proveedores(request):
+    busqueda = request.GET.get("q", "").strip()
+    proveedores = Proveedor.objects.all()
+    
+    if busqueda:
+        proveedores = proveedores.filter(nombre__icontains=busqueda)
+    
+    return render(request, "menu/listar_proveedores.html", {
+        "proveedores": proveedores,
+        "busqueda": busqueda,
+    })
+
+
+@admin_required
+def editar_proveedor(request, proveedor_id):
+    proveedor = get_object_or_404(Proveedor, id=proveedor_id)
+    if request.method == "POST":
+        form = ProveedorForm(request.POST, instance=proveedor)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Proveedor actualizado correctamente")
+            return redirect("listar_proveedores")
+    else:
+        form = ProveedorForm(instance=proveedor)
+    return render(request, "menu/proveedor_form.html", {
+        "form": form,
+        "titulo": "Editar proveedor",
+        "proveedor": proveedor,
+    })
+
+
+@admin_required
+@require_http_methods(["POST"])
+def eliminar_proveedor(request, proveedor_id):
+    proveedor = get_object_or_404(Proveedor, id=proveedor_id)
+    
+    # Verificar si el proveedor tiene productos
+    if proveedor.productos.exists():
+        messages.error(
+            request,
+            f"No se puede eliminar el proveedor '{proveedor.nombre}' porque tiene productos de almacén asociados."
+        )
+        return redirect("listar_proveedores")
+    
+    nombre_proveedor = proveedor.nombre
+    proveedor.delete()
+    messages.success(request, f"Proveedor '{nombre_proveedor}' eliminado correctamente")
+    return redirect("listar_proveedores")
 
 
 @admin_required

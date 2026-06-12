@@ -12,6 +12,7 @@
     {% block extra_head %}{% endblock %}
 </head>
 <body class="{% block body_class %}app-page{% endblock %}">
+    {% include "components/navbar.html" %}
     {% if messages %}
         <div class="message-stack">
             {% for message in messages %}

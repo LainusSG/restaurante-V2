@@ -1,0 +1,43 @@
+<nav class="navbar">
+    <div class="navbar-content">
+        {% if user.is_authenticated %}
+            <div class="navbar-user">
+                <span class="navbar-username">{{ user.username }}</span>
+                <a href="{% url 'logout' %}" class="btn btn-secondary btn-small">Cerrar sesión</a>
+            </div>
+        {% endif %}
+    </div>
+</nav>
+
+<style>
+    .navbar {
+        background-color: #f8f8f8;
+        border-bottom: 1px solid #e0e0e0;
+        padding: 0.75rem 1.5rem;
+    }
+
+    .navbar-content {
+        max-width: 1400px;
+        margin: 0 auto;
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+    }
+
+    .navbar-user {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .navbar-username {
+        font-size: 0.9rem;
+        color: #666;
+        font-weight: 500;
+    }
+
+    .btn-small {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.85rem;
+    }
+</style>

@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}Proveedores{% endblock %}
+
+{% block page %}
+{% include "components/page_hero.html" with compact=True eyebrow="Inventario" title="Proveedores" subtitle="Gestiona tus proveedores de mercancía" %}
+
+<main class="page-shell">
+    <div class="toolbar">
+        <form method="get" class="inventory-filter">
+            <label>
+                Buscar proveedor
+                <input type="search" name="q" value="{{ busqueda }}" class="form-input" placeholder="Nombre">
+            </label>
+            <button type="submit" class="btn">Buscar</button>
+            <a href="{% url 'crear_proveedor' %}" class="btn btn-secondary">Crear proveedor</a>
+        </form>
+    </div>
+
+    <div class="admin-table-container">
+        {% if proveedores %}
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Teléfono</th>
+                        <th>Email</th>
+                        <th>Dirección</th>
+                        <th>Estado</th>
+                        <th>Productos</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for proveedor in proveedores %}
+                        <tr>
+                            <td><strong>{{ proveedor.nombre }}</strong></td>
+                            <td>{{ proveedor.telefono|default:"—" }}</td>
+                            <td>{{ proveedor.email|default:"—" }}</td>
+                            <td>{{ proveedor.direccion|truncatewords:5|default:"—" }}</td>
+                            <td>
+                                {% if proveedor.activo %}
+                                    <span class="badge badge-success">Activo</span>
+                                {% else %}
+                                    <span class="badge badge-inactive">Inactivo</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ proveedor.productos.count }}</td>
+                            <td>
+                                <div class="button-row">
+                                    <a href="{% url 'editar_proveedor' proveedor.id %}" class="btn btn-ghost">Editar</a>
+                                    <a href="{% url 'eliminar_proveedor' proveedor.id %}" class="btn btn-danger"
+                                       data-confirm-title="Eliminar proveedor"
+                                       data-confirm-message="¿Seguro que deseas eliminar el proveedor {{ proveedor.nombre }}?"
+                                       data-confirm-text="Eliminar"
+                                       data-confirm-method="POST">Eliminar</a>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <div class="empty-state">
+                <p>{% if busqueda %}No se encontraron proveedores que coincidan con tu búsqueda.{% else %}Aún no tienes proveedores registrados.{% endif %}</p>
+                {% if not busqueda %}
+                    <a href="{% url 'crear_proveedor' %}" class="btn btn-primary">Crear el primer proveedor</a>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+</main>
+{% endblock %}
