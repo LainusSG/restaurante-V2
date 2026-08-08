@@ -2054,23 +2054,11 @@ select.form-input {
         color: #000;
     }
 
-    body * {
-        visibility: hidden;
-    }
-
-    .ticket,
-    .ticket * {
-        visibility: visible;
-    }
-
     .receipt-page button {
         display: none;
     }
 
     .ticket {
-        position: absolute;
-        left: 0;
-        top: 0;
         width: 58mm;
         margin: 0;
         padding: 0;
