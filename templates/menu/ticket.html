@@ -60,31 +60,21 @@
         Gracias por tu compra<br>Restaurante Dugouth & Mi gusto es
     </div>
 
-    <button onclick="imprimirYVolver()" type="button" class="btn">{% if reimpresion %}Reimprimir ticket{% else %}Imprimir ticket{% endif %}</button>
+    <div class="ticket-actions">
+        <button onclick="imprimirTicket()" type="button" class="btn">{% if reimpresion %}Reimprimir ticket{% else %}Imprimir ticket{% endif %}</button>
+        {% if reimpresion %}
+            <a href="{% url 'detalle_venta' venta.id %}" class="btn btn-secondary">Volver</a>
+        {% else %}
+            <a href="{% url 'seleccionar_mesa' %}" class="btn btn-secondary">Volver</a>
+        {% endif %}
+    </div>
 </main>
 {% endblock %}
 
 {% block scripts %}
 <script>
-let yaVolvioDespuesDeImprimir = false;
-
-function volverDespuesDeImprimir() {
-    if (yaVolvioDespuesDeImprimir) {
-        return;
-    }
-    yaVolvioDespuesDeImprimir = true;
-    {% if reimpresion %}
-    window.location.href = "{% url 'detalle_venta' venta.id %}";
-    {% else %}
-    window.location.href = "{% url 'seleccionar_mesa' %}";
-    {% endif %}
-}
-
-window.addEventListener("afterprint", volverDespuesDeImprimir);
-
-function imprimirYVolver() {
+function imprimirTicket() {
     window.print();
-    setTimeout(volverDespuesDeImprimir, 4000);
 }
 </script>
 {% endblock %}
