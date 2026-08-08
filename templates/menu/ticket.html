@@ -66,15 +66,25 @@
 
 {% block scripts %}
 <script>
+let yaVolvioDespuesDeImprimir = false;
+
+function volverDespuesDeImprimir() {
+    if (yaVolvioDespuesDeImprimir) {
+        return;
+    }
+    yaVolvioDespuesDeImprimir = true;
+    {% if reimpresion %}
+    window.location.href = "{% url 'detalle_venta' venta.id %}";
+    {% else %}
+    window.location.href = "{% url 'seleccionar_mesa' %}";
+    {% endif %}
+}
+
+window.addEventListener("afterprint", volverDespuesDeImprimir);
+
 function imprimirYVolver() {
     window.print();
-    setTimeout(() => {
-        {% if reimpresion %}
-        window.location.href = "{% url 'detalle_venta' venta.id %}";
-        {% else %}
-        window.location.href = "{% url 'seleccionar_mesa' %}";
-        {% endif %}
-    }, 500);
+    setTimeout(volverDespuesDeImprimir, 4000);
 }
 </script>
 {% endblock %}
