@@ -5,7 +5,7 @@
 
 {% block page %}
 <main class="ticket">
-    <h1>Restaurante XYZ</h1>
+    <h1>Restaurante Dugouth & Mi gusto es</h1>
     {% if venta %}
         <p><strong>Ticket:</strong> #{{ venta.ticket_numero|default:venta.id }}</p>
         <p><strong>Fecha:</strong> {{ venta.creado_en|date:"d/m/Y H:i" }}</p>
@@ -57,7 +57,7 @@
     {% endif %}
     <hr>
     <div class="ticket-footer">
-        Gracias por tu compra<br>Restaurante XYZ
+        Gracias por tu compra<br>Restaurante Dugouth & Mi gusto es
     </div>
 
     <button onclick="imprimirYVolver()" type="button" class="btn">{% if reimpresion %}Reimprimir ticket{% else %}Imprimir ticket{% endif %}</button>

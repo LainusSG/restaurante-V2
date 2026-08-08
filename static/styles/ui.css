@@ -1537,6 +1537,10 @@ select.form-input {
     gap: 12px;
 }
 
+.ticket .total {
+    color: #000;
+}
+
 .ticket-footer {
     margin-top: 10px;
     text-align: center;
